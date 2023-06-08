@@ -1,0 +1,15 @@
+# VisualStudio Code
+.vscode
+.DS_Store
+
+# Python Binary
+__pycache__
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Temp Files
+Jonathan
+test_scraper
+outdated
+Marathons_Data
