@@ -394,5 +394,5 @@ class HamburgMarathon(MarathonBase):
         men_soup = self.create_soup(webpage_content=web_pages[0].content)
         women_soup = self.create_soup(webpage_content=web_pages[1].content)
 
-        # Anchor tag before last is the total number of pages.
-        return (men_soup.findAll("a")[-2].text, women_soup.findAll("a")[-2].text)
+        # The fifth Anchor tag starting from last is the total number of pages.
+        return (men_soup.findAll("a")[-5].text, women_soup.findAll("a")[-5].text)
