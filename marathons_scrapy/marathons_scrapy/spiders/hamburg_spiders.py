@@ -37,11 +37,10 @@ class Hamburg1317(scrapy.Spider):
         runners = response.xpath("//tr")
         item = HamburgItem()
         for runner in runners[1:]:  # skipping table header.
-            item["run_no"] = runner.xpath("td[6]/text()").get()
-            item["age_cat"] = runner.xpath("td[7]/text()").get()
+            item["run_no"] = runner.xpath("td[3]/text()").get()
+            item["age_cat"] = runner.xpath("td[6]/text()").get()
             item["sex"] = re.findall(".(?=&num)", response.url)[0]
-            item["half"] = runner.xpath("td[8]/text()").get()
-            item["finish"] = runner.xpath("td[9]/text()").get()
+            item["finish"] = runner.xpath("td[8]/text()").get()
             item["idp"] = re.findall(
                 "(?<=idp=).+?(?=&)", runner.xpath("td[4]/a/@href").get()
             )[0]
