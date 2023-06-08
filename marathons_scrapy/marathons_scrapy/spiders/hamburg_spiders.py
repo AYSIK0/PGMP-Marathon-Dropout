@@ -50,20 +50,14 @@ class Hamburg1317(scrapy.Spider):
         """
         ### Parse the split result pages.
         """
-        split_item = HamburgItem()
+        split_item = HamburgSplitItem()
         split_item["idp"] = re.findall("(?<=idp=).+?(?=&)", response.url)[0]
-        # split_item["race_state"] = response.xpath(
-        #     '//div[@class="detail-box box-state"]//tr[1]/td/text()'
-        # ).get()
-        # split_item["last_split"] = response.xpath(
-        #     '//div[@class="detail-box box-state"]//tr[2]/td/text()'
-        # ).get()
 
         splits = response.xpath('//div[@class="detail-box box-splits"]//tr')
-        keys = HamburgItem.get_split_keys()
+        keys = HamburgSplitItem.get_split_keys()
         for i, split in enumerate(splits[1:]):  # 10 rows in each splits table.
-            time = split.xpath("td[2]/text()").get()  # time
-            pace = split.xpath("td[4]/text()").get()  # min/km
-            speed = split.xpath("td[5]/text()").get()  # km/h
+            time = split.xpath("td[1]/text()").get()  # time
+            pace = split.xpath("td[3]/text()").get()  # min/km
+            speed = split.xpath("td[4]/text()").get()  # km/h
             split_item[keys[i]] = [time, pace, speed]
         yield split_item
