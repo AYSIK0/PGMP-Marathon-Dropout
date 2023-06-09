@@ -189,7 +189,7 @@ class LondonMarathon(MarathonBase):
         A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
         """
         curr_url = self.prepare_res_urls(
-            years=[year], pages=pages, num_results=num_results
+            year=year, pages=pages, num_results=num_results
         )
         try:
             men_res_page = requests.get(curr_url[0][0])
@@ -266,7 +266,7 @@ class HamburgMarathon(MarathonBase):
         A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
         """
         curr_url = self.prepare_res_urls(
-            years=[year], pages=pages, num_results=num_results
+            year=year, pages=pages, num_results=num_results
         )
         try:
             men_res_page = requests.get(curr_url[0][0])
