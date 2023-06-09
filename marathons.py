@@ -55,9 +55,9 @@ class MarathonBase(ABC):
         gender: list[str] = ["M", "W"],
         num_results: str = "25",
         flat_list: bool = False,
-    ) -> list[list[str], list[str]]:
+    ) -> list[list[str], list[str]] | list[str]:
         """
-        ### Method that create the marathon results URLs needed based on the years and pages lists.
+        ### Method that creates the marathon results URLs needed based on the years and pages lists.
         ---
         ### Arguments:
         - url: URL template to use.
@@ -141,6 +141,17 @@ class MarathonBase(ABC):
         BeautifulSoup object.
         """
         return BeautifulSoup(webpage_content, features="lxml")
+
+    @abstractmethod
+    def get_max_pages(self) -> list[str]:
+        """
+        ### Abstract method, specific implementation handled by child class; \n
+        the method is used to get the max number of pages available based on \
+        the number of results displayed.
+        """
+        raise NotImplementedError(
+            "Abstract class method was called, this method should be overridden in child class."
+        )
 
 
 class LondonMarathon(MarathonBase):
