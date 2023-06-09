@@ -151,7 +151,7 @@ class MarathonBase(ABC):
 
 class LondonMarathon(MarathonBase):
     """
-    ### Class used to scrap data of the London marathon.
+    ### Class used to gather data of the London marathon which will be used for scraping it.
     """
 
     def __init__(
@@ -199,27 +199,20 @@ class LondonMarathon(MarathonBase):
             print(f"Error Occurred: {e}")
 
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
-        """
-        ###
-        ---
-        ### Arguments:
-        ---
-        ### Returns:
-        """
         return super().create_soup(webpage_content)
 
     def get_max_pages(
         self, year: str, num_results: str = "25", after_18: bool = False
     ) -> list[str]:
         """
-        ###
+        ### Method used for getting the max page number for both men and women result pages.
         ---
         ### Arguments:
-        -
-        -
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default 25).
         - after_18 (Bool): Wether we getting page after 2018.
         ---
-        ### Returns:
+        ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         web_pages = self.request_page(year, pages=["1", "1"], num_results=num_results)
         men_soup = self.create_soup(webpage_content=web_pages[0].content)
@@ -234,6 +227,10 @@ class LondonMarathon(MarathonBase):
 
 
 class HamburgMarathon(MarathonBase):
+    """
+    Class used to gather data of the Hamburg marathon which will be used for scraping it.
+    """
+
     def __init__(
         self, url_template: str = None, split_url_template: str = None
     ) -> None:
@@ -279,13 +276,6 @@ class HamburgMarathon(MarathonBase):
             print(f"Error Occurred: {e}")
 
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
-        """
-        ###
-        ---
-        ### Arguments:
-        ---
-        ### Returns:
-        """
         return super().create_soup(webpage_content)
 
     def get_max_pages(
@@ -294,13 +284,13 @@ class HamburgMarathon(MarathonBase):
         num_results: str = "25",
     ) -> list[str]:
         """
-        ###
+        ### Method used for getting the max page number for both men and women result pages.
         ---
         ### Arguments:
-        -
-        -
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default 25).
         ---
-        ### Returns:
+        ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         web_pages = self.request_page(year, pages=["1", "1"], num_results=num_results)
         men_soup = self.create_soup(webpage_content=web_pages[0].content)
