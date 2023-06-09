@@ -10,7 +10,7 @@ class MarathonsScrapyItem(scrapy.Item):
     # define the fields for your item here like:
     run_no: str = scrapy.Field()
     age_cat: str = scrapy.Field()
-    sex: str = scrapy.Field()
+    gender: str = scrapy.Field()
     half: str = scrapy.Field()
     finish: str = scrapy.Field()
     idp: str = scrapy.Field()
