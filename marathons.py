@@ -161,14 +161,14 @@ class LondonMarathon(MarathonBase):
 
     def prepare_res_urls(
         self,
-        years: list[str],
+        year: str,
         pages: list[str],
         gender: list[str] = ["M", "W"],
         num_results: str = "25",
         flat_list: bool = False,
     ) -> list[list[str], list[str]]:
         return super().prepare_res_urls(
-            self.url_template, years, pages, gender, num_results, flat_list
+            self.url_template, year, pages, gender, num_results, flat_list
         )
 
     def prepare_split_urls(self, url: str, year: str, idps: list[str]) -> list[str]:
@@ -238,14 +238,14 @@ class HamburgMarathon(MarathonBase):
 
     def prepare_res_urls(
         self,
-        years: list[str],
+        year: str,
         pages: list[str],
         gender: list[str] = ["M", "W"],
         num_results: str = "25",
         flat_list: bool = False,
     ) -> list[list[str], list[str]]:
         return super().prepare_res_urls(
-            self.url_template, years, pages, gender, num_results, flat_list
+            self.url_template, year, pages, gender, num_results, flat_list
         )
 
     def prepare_split_urls(self, url: str, year: str, idps: list[str]) -> list[str]:
