@@ -50,7 +50,7 @@ class MarathonBase(ABC):
     def prepare_res_urls(
         self,
         url: str,
-        years: list[str],
+        year: str,
         pages: list[str],
         gender: list[str] = ["M", "W"],
         num_results: str = "25",
@@ -61,33 +61,36 @@ class MarathonBase(ABC):
         ---
         ### Arguments:
         - url: URL template to use.
-        - years: A list of years as strings.
+        - year: year of marathon as string.
         - pages: A list that must only contain two elements the max pages for Men and Women.
         - gender: A list of that contains 2 elements M for men and W for women.
         - num_results: The number of results in a page. (Default 25).
+        - flat_list: A boolean to decided wether to return a single list that contains \
+            all URLs or a list with 2 (men and women) inner URLs list
         ---
         ### Returns:
-        A list that contain two lists, the first one has all URLs of the mens and the second one contains URLs of the women.
+        #### flat_list == False:
+        A list that contain two lists, the first one has all URLs of the men and the second one contains URLs of the women.
+        #### flat_list == True:
+        A list that contains all URLs for men and women pages.
         """
-        if not years or not pages:
-            raise Exception("years and pages should contains at least 1 element.")
+        if len(pages) != 2:
+            raise Exception(
+                " pages should contains exactly 2 elements first element is men max page number and the second one is the women max page number."
+            )
         men_pages = int(pages[0])
         women_pages = int(pages[1])
         max_pages = max(men_pages, women_pages)
         res_urls = [[], []]
 
-        for year in years:
-            for page in range(1, max_pages + 1):
-                # Men
-                if page <= men_pages:
-                    res_urls[0].append(
-                        url.format(year, str(page), gender[0], num_results)
-                    )
-                # Women
-                if page <= women_pages:
-                    res_urls[1].append(
-                        url.format(year, str(page), gender[1], num_results)
-                    )
+        # for year in years:
+        for page in range(1, max_pages + 1):
+            # Men
+            if page <= men_pages:
+                res_urls[0].append(url.format(year, str(page), gender[0], num_results))
+            # Women
+            if page <= women_pages:
+                res_urls[1].append(url.format(year, str(page), gender[1], num_results))
         if flat_list:
             # unpacking the lists into a single list.
             return list(chain(*res_urls))
@@ -104,7 +107,7 @@ class MarathonBase(ABC):
         - idps: idp of the runner.
         ---
         ### Returns:
-        A list that contains .........!!!!!
+        A list that contains all URLs for split page of the runner.
         """
         res_list = []
         for idp in idps:
