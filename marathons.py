@@ -117,20 +117,12 @@ class MarathonBase(ABC):
     @abstractmethod
     def request_page(self) -> requests.models.Response:
         """
-        ### Abstract method, specific implementation handled by child class.
+        ### Abstract method, specific implementation handled by child class. \n
+        the method should be used to request a webpage.
         """
         raise NotImplementedError(
             "Abstract class method was called, this method should be overridden in child class."
         )
-
-    # @abstractmethod
-    # def request_pages(self) -> requests.models.Response:
-    #     """
-    #     ### Abstract method, specific implementation handled by child class.
-    #     """
-    #     raise NotImplementedError(
-    #         "Abstract class method was called, this method should be overridden in child class."
-    #     )
 
     @abstractmethod
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
@@ -205,53 +197,6 @@ class LondonMarathon(MarathonBase):
             return (men_res_page, women_res_page)
         except Exception as e:
             print(f"Error Occurred: {e}")
-
-    # def request_pages(
-    #     self, years: list[str], pages: list[str], num_results: str = "25"
-    # ) -> list[list[requests.models.Response], list[requests.models.Response]]:
-    #     """
-    #     ### Method to get multiple HTML pages.
-    #     ---
-    #     ### Arguments:
-    #     - years:
-    #     - pages:
-    #     - num_results:
-    #     ---
-    #     ### num_results:
-
-    #     """
-    #     if not years or not pages:
-    #         raise Exception(
-    #             "years and pages should contains at least 1 element."
-    #         )  # TODO update error message since pages should contains exactly two elements men and women max pages.
-    #     temp_urls = self.prepare_res_urls(
-    #         years=years, pages=pages, num_results=num_results
-    #     )
-
-    #     webpages = [[], []]
-    #     print(
-    #         f"{len(temp_urls[0] + temp_urls[1])} URLs have been created."
-    #     )  # TODO Are these print statements necessary since the file now is a module.!!!
-    #     # Men
-    #     for url in temp_urls[0]:
-    #         try:
-    #             res_page = requests.get(url, timeout=10)
-    #             webpages[0].append(res_page)
-    #         except Exception as e:
-    #             print(f"Error Occurred: {e}")
-    #     print("Men webpages finished processing.")
-    #     # Women
-    #     for url in temp_urls[1]:
-    #         try:
-    #             res_page = requests.get(url, timeout=10)
-
-    #             webpages[1].append(res_page)
-    #         except Exception as e:
-    #             print(f"Error Occurred: {e}")
-    #     print(
-    #         "Women webpages finished processing. \n Done"
-    #     )  # TODO Are these print statements necessary since the file now is a module.!!!
-    #     return webpages
 
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
         """
@@ -332,53 +277,6 @@ class HamburgMarathon(MarathonBase):
             return (men_res_page, women_res_page)
         except Exception as e:
             print(f"Error Occurred: {e}")
-
-    # def request_pages(
-    #     self, years: list[str], pages: list[str], num_results: str = "25"
-    # ) -> list[list[requests.models.Response], list[requests.models.Response]]:
-    #     """
-    #     ### Method to get multiple HTML pages.
-    #     ---
-    #     ### Arguments:
-    #     - years:
-    #     - pages:
-    #     - num_results:
-    #     ---
-    #     ### num_results:
-
-    #     """
-    #     if not years or not pages:
-    #         raise Exception(
-    #             "years and pages should contains at least 1 element."
-    #         )  # TODO update error message since pages should contains exactly two elements men and women max pages.
-    #     temp_urls = self.prepare_res_urls(
-    #         years=years, pages=pages, num_results=num_results
-    #     )
-
-    #     webpages = [[], []]
-    #     print(
-    #         f"{len(temp_urls[0] + temp_urls[1])} URLs have been created."
-    #     )  # TODO Are these print statements necessary since the file now is a module.!!!
-    #     # Men
-    #     for url in temp_urls[0]:
-    #         try:
-    #             res_page = requests.get(url, timeout=10)
-    #             webpages[0].append(res_page)
-    #         except Exception as e:
-    #             print(f"Error Occurred: {e}")
-    #     print("Men webpages finished processing.")
-    #     # Women
-    #     for url in temp_urls[1]:
-    #         try:
-    #             res_page = requests.get(url, timeout=10)
-
-    #             webpages[1].append(res_page)
-    #         except Exception as e:
-    #             print(f"Error Occurred: {e}")
-    #     print(
-    #         "Women webpages finished processing. \n Done"
-    #     )  # TODO Are these print statements necessary since the file now is a module.!!!
-    #     return webpages
 
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
         """
