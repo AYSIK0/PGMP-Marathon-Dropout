@@ -167,12 +167,39 @@ class LondonMarathon(MarathonBase):
         num_results: str = "25",
         flat_list: bool = False,
     ) -> list[list[str], list[str]]:
+        """
+        ### Method that creates the marathon results URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - year: year of marathon as string.
+        - pages: A list that must only contain two elements the max pages for Men and Women.
+        - gender: A list of that contains 2 elements M for men and W for women.
+        - num_results: The number of results in a page. (Default 25).
+        - flat_list: A boolean to decided wether to return a single list that contains \
+            all URLs or a list with 2 (men and women) inner URLs list
+        ---
+        ### Returns:
+        #### flat_list == False:
+        A list that contain two lists, the first one has all URLs of the men and the second one contains URLs of the women.
+        #### flat_list == True:
+        A list that contains all URLs for men and women pages.
+        """
         return super().prepare_res_urls(
             self.url_template, year, pages, gender, num_results, flat_list
         )
 
-    def prepare_split_urls(self, url: str, year: str, idps: list[str]) -> list[str]:
-        return super().prepare_split_urls(url, year, idps)
+    def prepare_split_urls(self, year: str, idps: list[str]) -> list[str]:
+        """
+        ### Method that create the personal splits URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - year: year of the marathon.
+        - idps: idp of the runner.
+        ---
+        ### Returns:
+        A list that contains all URLs for split page of the runner.
+        """
+        return super().prepare_split_urls(self.split_url_template, year, idps)
 
     def request_page(
         self, year: str = None, pages: list[str] = None, num_results: str = "25"
@@ -244,12 +271,39 @@ class HamburgMarathon(MarathonBase):
         num_results: str = "25",
         flat_list: bool = False,
     ) -> list[list[str], list[str]]:
+        """
+        ### Method that creates the marathon results URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - year: year of marathon as string.
+        - pages: A list that must only contain two elements the max pages for Men and Women.
+        - gender: A list of that contains 2 elements M for men and W for women.
+        - num_results: The number of results in a page. (Default 25).
+        - flat_list: A boolean to decided wether to return a single list that contains \
+            all URLs or a list with 2 (men and women) inner URLs list
+        ---
+        ### Returns:
+        #### flat_list == False:
+        A list that contain two lists, the first one has all URLs of the men and the second one contains URLs of the women.
+        #### flat_list == True:
+        A list that contains all URLs for men and women pages.
+        """
         return super().prepare_res_urls(
             self.url_template, year, pages, gender, num_results, flat_list
         )
 
     def prepare_split_urls(self, url: str, year: str, idps: list[str]) -> list[str]:
-        return super().prepare_split_urls(url, year, idps)
+        """
+        ### Method that create the personal splits URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - year: year of the marathon.
+        - idps: idp of the runner.
+        ---
+        ### Returns:
+        A list that contains all URLs for split page of the runner.
+        """
+        return super().prepare_split_urls(self.split_url_template, year, idps)
 
     def request_page(
         self, year: str = None, pages: list[str] = None, num_results: str = "25"
