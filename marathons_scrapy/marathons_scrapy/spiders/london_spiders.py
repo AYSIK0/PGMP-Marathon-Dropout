@@ -118,7 +118,7 @@ class LondonSpider1923(scrapy.Spider):
             item["age_cat"] = runner.xpath(
                 './/div[@class= " list-field type-age_class"]/text()'
             ).get()
-            item["sex"] = re.findall(".(?=&num)", response.url)[0]
+            item["gender"] = re.findall(".(?=&num)", response.url)[0]
             item["half"] = runner.xpath(
                 './/div[@class="split list-field type-time hidden-xs"]/text()'
             ).get()
