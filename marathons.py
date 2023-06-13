@@ -292,7 +292,7 @@ class HamburgMarathon(MarathonBase):
             self.url_template, year, pages, gender, num_results, flat_list
         )
 
-    def prepare_split_urls(self, url: str, year: str, idps: list[str]) -> list[str]:
+    def prepare_split_urls(self, year: str, idps: list[str]) -> list[str]:
         """
         ### Method that create the personal splits URLs needed based on the years and pages lists.
         ---
