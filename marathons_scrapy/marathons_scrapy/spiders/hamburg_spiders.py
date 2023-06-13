@@ -55,9 +55,16 @@ class Hamburg1317(scrapy.Spider):
 
         splits = response.xpath('//div[@class="detail-box box-splits"]//tr')
         keys = HamburgSplitItem.get_split_keys()
+        # Extracting splits data.
         for i, split in enumerate(splits[1:]):  # 10 rows in each splits table.
-            time = split.xpath("td[1]/text()").get()  # time
-            pace = split.xpath("td[3]/text()").get()  # min/km
-            speed = split.xpath("td[4]/text()").get()  # km/h
+            # check if the time is not estimated.
+            if "estimated" not in split.xpath("@class").get():
+                time = split.xpath("td[1]/text()").get()  # time hh:mm:ss
+                pace = split.xpath("td[3]/text()").get()  # min/km
+                speed = split.xpath("td[4]/text()").get()  # km/h
+            else:
+                time = "-"
+                pace = "-"
+                speed = "-"
             split_item[keys[i]] = [time, pace, speed]
         yield split_item
