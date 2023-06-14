@@ -115,14 +115,29 @@ class MarathonBase(ABC):
         return res_list
 
     @abstractmethod
-    def request_page(self) -> requests.models.Response:
+    def request_page(
+        self, year: str = None, pages: list[str] = None, num_results: str = "25"
+    ) -> tuple[requests.models.Response, requests.models.Response]:
         """
-        ### Abstract method, specific implementation handled by child class. \n
-        the method should be used to request a webpage.
+        ### Method to request an HTML page.
+        ---
+        ### Arguments:
+        - year: The year of the marathon.
+        - page: A list that must only contain two elements the max pages for Men and Women.
+        - num_results: The number of results in a page. (Default 25).
+        ---
+        ### Returns:
+        A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
         """
-        raise NotImplementedError(
-            "Abstract class method was called, this method should be overridden in child class."
+        curr_url = self.prepare_res_urls(
+            year=year, pages=pages, num_results=num_results
         )
+        try:
+            men_res_page = requests.get(curr_url[0][0])
+            women_res_page = requests.get(curr_url[1][0])
+            return (men_res_page, women_res_page)
+        except Exception as e:
+            print(f"Error Occurred: {e}")
 
     @abstractmethod
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
@@ -215,15 +230,7 @@ class LondonMarathon(MarathonBase):
         ### Returns:
         A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
         """
-        curr_url = self.prepare_res_urls(
-            year=year, pages=pages, num_results=num_results
-        )
-        try:
-            men_res_page = requests.get(curr_url[0][0])
-            women_res_page = requests.get(curr_url[1][0])
-            return (men_res_page, women_res_page)
-        except Exception as e:
-            print(f"Error Occurred: {e}")
+        return super().request_page(year, pages, num_results)
 
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
         return super().create_soup(webpage_content)
@@ -319,15 +326,7 @@ class HamburgMarathon(MarathonBase):
         ### Returns:
         A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
         """
-        curr_url = self.prepare_res_urls(
-            year=year, pages=pages, num_results=num_results
-        )
-        try:
-            men_res_page = requests.get(curr_url[0][0])
-            women_res_page = requests.get(curr_url[1][0])
-            return (men_res_page, women_res_page)
-        except Exception as e:
-            print(f"Error Occurred: {e}")
+        return super().request_page(year, pages, num_results)
 
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
         return super().create_soup(webpage_content)
