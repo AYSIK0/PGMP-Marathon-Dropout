@@ -67,3 +67,13 @@ class HamburgItem(MarathonsScrapyItem):
 class HamburgSplitItem(MarathonsSplitItem):
     def __init__(self):
         super().__init__()
+
+
+class HoustonItem(MarathonsScrapyItem):
+    def __init__(self):
+        super().__init__()
+
+
+class HoustonSplitItem(MarathonsSplitItem):
+    def __init__(self):
+        super().__init__()
