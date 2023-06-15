@@ -426,9 +426,7 @@ class HoustonMarathon(MarathonBase):
     def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
         return super().create_soup(webpage_content)
 
-    def get_max_pages(
-        self, year: str, num_results: str = "25", after_18: bool = False
-    ) -> list[str]:
+    def get_max_pages(self, year: str, num_results: str = "25") -> list[str]:
         """
         ### Method used for getting the max page number for both men and women result pages.
         ---
@@ -442,6 +440,12 @@ class HoustonMarathon(MarathonBase):
         web_pages = self.request_page(year, pages=["1", "1"], num_results=num_results)
         men_soup = self.create_soup(webpage_content=web_pages[0].content)
         women_soup = self.create_soup(webpage_content=web_pages[1].content)
-
+        max_men_pages = (
+            men_soup.find_all("li", class_="hidden-xs hidden-sm")[-1].find("a").text
+        )
+        max_women_pages = (
+            women_soup.find_all("li", class_="hidden-xs hidden-sm")[-1].find("a").text
+        )
+        return (max_men_pages, max_women_pages)
         # The third Anchor tag starting from last is the total number of pages.
-        return (men_soup.findAll("a")[-3].text, women_soup.findAll("a")[-3].text)
+        # return (men_soup.findAll("a")[-3].text, women_soup.findAll("a")[-3].text)
