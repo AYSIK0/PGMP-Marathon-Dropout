@@ -67,3 +67,27 @@ class HamburgItem(MarathonsScrapyItem):
 class HamburgSplitItem(MarathonsSplitItem):
     def __init__(self):
         super().__init__()
+
+
+class HoustonItem(MarathonsScrapyItem):
+    def __init__(self):
+        super().__init__()
+
+
+class HoustonSplitItem(MarathonsSplitItem):
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def get_split_keys(self) -> list[str]:
+        return [
+            "k_5",
+            "k_10",
+            "k_15",
+            "k_half",
+            "k_25",
+            "k_30",
+            "k_35",
+            "k_40",
+            "k_finish",
+        ]
