@@ -91,3 +91,15 @@ class HoustonSplitItem(MarathonsSplitItem):
             "k_40",
             "k_finish",
         ]
+
+
+class StockholmItem(MarathonsScrapyItem):
+    def __init__(self):
+        super().__init__()
+
+
+class StockholmSplitItem(MarathonsSplitItem):
+    def __init__(self):
+        super().__init__()
+
+    yob: str = scrapy.Field()
