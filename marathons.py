@@ -422,7 +422,96 @@ class HoustonMarathon(MarathonBase):
         ### Arguments:
         - year: The year of marathon
         - num_results: The number of results to be displayed per page (Default 25).
-        - after_18 (Bool): Wether we getting page after 2018.
+        ---
+        ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
+        """
+        web_pages = self.request_page(year, pages=["1", "1"], num_results=num_results)
+        men_soup = self.create_soup(webpage_content=web_pages[0].content)
+        women_soup = self.create_soup(webpage_content=web_pages[1].content)
+
+        max_men_pages = men_soup.select('div[class*="pages"] a')[-2].text
+        max_women_pages = women_soup.select('div[class*="pages"] a')[-2].text
+        return (max_men_pages, max_women_pages)
+
+
+class StockHolmMarathon(MarathonBase):
+    """
+    ### Class used to gather data of the Stockholm marathon which will be used for scraping it.
+    """
+
+    def __init__(
+        self, url_template: str = None, split_url_template: str = None
+    ) -> None:
+        super().__init__(url_template, split_url_template)
+
+    def prepare_res_urls(
+        self,
+        year: str,
+        pages: list[str],
+        gender: list[str] = ["M", "W"],
+        num_results: str = "25",
+        flat_list: bool = False,
+    ) -> list[list[str], list[str]]:
+        """
+        ### Method that creates the marathon results URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - year: year of marathon as string.
+        - pages: A list that must only contain two elements the max pages for Men and Women.
+        - gender: A list of that contains 2 elements M for men and W for women.
+        - num_results: The number of results in a page. (Default 25).
+        - flat_list: A boolean to decided wether to return a single list that contains \
+            all URLs or a list with 2 (men and women) inner URLs list
+        ---
+        ### Returns:
+        #### flat_list == False:
+        A list that contain two lists, the first one has all URLs of the men and the second one contains URLs of the women.
+        #### flat_list == True:
+        A list that contains all URLs for men and women pages.
+        """
+        return super().prepare_res_urls(
+            self.url_template, year, pages, gender, num_results, flat_list
+        )
+
+    def prepare_split_urls(self, year: str, idps: list[str]) -> list[str]:
+        """
+        ### Method that create the personal splits URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - year: year of the marathon.
+        - idps: idp of the runner.
+        ---
+        ### Returns:
+        A list that contains all URLs for split page of the runner.
+        """
+        return super().prepare_split_urls(self.split_url_template, year, idps)
+
+    def request_page(
+        self, year: str = None, pages: list[str] = None, num_results: str = "25"
+    ) -> tuple[requests.models.Response, requests.models.Response]:
+        """
+        ### Method to request an HTML page.
+        ---
+        ### Arguments:
+        - year: The year of the marathon.
+        - page: A list that must only contain two elements the max pages for Men and Women.
+        - num_results: The number of results in a page. (Default 25).
+        ---
+        ### Returns:
+        A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
+        """
+        return super().request_page(year, pages, num_results)
+
+    def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
+        return super().create_soup(webpage_content)
+
+    def get_max_pages(self, year: str, num_results: str = "25") -> list[str]:
+        """
+        ### Method used for getting the max page number for both men and women result pages.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default 25).
         ---
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
