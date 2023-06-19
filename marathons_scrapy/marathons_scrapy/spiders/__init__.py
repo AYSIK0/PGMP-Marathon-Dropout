@@ -8,4 +8,5 @@ __all__ = [
     "hamburg_spiders",
     "houston_spiders",
     "stockholm_spiders",
+    "boston_spiders",
 ]
