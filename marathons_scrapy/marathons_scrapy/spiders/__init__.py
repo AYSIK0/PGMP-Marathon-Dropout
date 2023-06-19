@@ -2,3 +2,10 @@
 #
 # Please refer to the documentation for information on how to create and manage
 # your spiders.
+
+__all__ = [
+    "london_spiders",
+    "hamburg_spiders",
+    "houston_spiders",
+    "stockholm_spiders",
+]
