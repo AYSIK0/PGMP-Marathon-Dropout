@@ -72,8 +72,11 @@ class Stockholm2122(scrapy.Spider):
                 speed = "-"
             split_item[keys[i]] = [time, pace, speed]
 
-        if split_item["k_finish"][0] and re.match(
-            "(\d{2}:\d{2}:\d{2})", split_item["k_finish"][0]
+        if (
+            # Check if runners have finish split (including empty one).
+            split_item.get("k_finish")
+            and split_item["k_finish"][0]
+            and re.match("(\d{2}:\d{2}:\d{2})", split_item["k_finish"][0])
         ):
             split_item["race_state"] = "Finished"
 
