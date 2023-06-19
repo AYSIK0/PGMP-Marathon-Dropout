@@ -103,3 +103,13 @@ class StockholmSplitItem(MarathonsSplitItem):
         super().__init__()
 
     yob: str = scrapy.Field()
+
+
+class BostonItem(MarathonsScrapyItem):
+    def __init__(self):
+        super().__init__()
+
+
+class BostonSplitItem(MarathonsSplitItem):
+    def __init__(self):
+        super().__init__()
