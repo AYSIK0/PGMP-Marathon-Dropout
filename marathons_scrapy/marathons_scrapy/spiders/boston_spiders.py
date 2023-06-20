@@ -83,8 +83,10 @@ class Boston1417(scrapy.Spider):
         ).get()
         # extracting age category from the age group. (e.g Female 18-39 -> 18-39) (e.g Female 80+ -> 80+)
         if age_group:
-            split_item["age_cat"] = re.search(
-                "(\d{2}-\d{2})|(\d{2}.+?)", age_group
-            ).group()
+            age_cat = re.search("(\d{2}-\d{2})|(\d{2}.+?)", age_group)
+            if age_cat:
+                split_item["age_cat"] = age_cat.group()
+            else:
+                split_item["age_cat"] = age_group
 
         yield split_item
