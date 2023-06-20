@@ -66,8 +66,8 @@ class Houston1819(scrapy.Spider):
             # check if the time is not estimated.
             if "estimated" not in split.xpath("@class").get():
                 time = split.xpath("td[2]/text()").get()  # time hh:mm:ss
-                pace = split.xpath("td[4]/text()").get()  # min/km
-                speed = split.xpath("td[5]/text()").get()  # km/h
+                pace = split.xpath("td[4]/text()").get()  # min/mile
+                speed = split.xpath("td[5]/text()").get()  # miles/h
             else:
                 time = "-"
                 pace = "-"
