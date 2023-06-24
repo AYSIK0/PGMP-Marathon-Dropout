@@ -3,6 +3,7 @@ from typing import Final
 from itertools import chain
 from bs4 import BeautifulSoup
 import requests
+from utils import get_settings
 
 
 class MarathonBase(ABC):
@@ -10,9 +11,7 @@ class MarathonBase(ABC):
     ### Abstract base class that implement some shared functionality used by children classes.
     """
 
-    def __init__(
-        self, url_template: str = None, split_url_template: str = None
-    ) -> None:
+    def __init__(self, url_template: str = None, split_url_template: str = None):
         """
         ### Construct the marathon object.
         ---
@@ -590,3 +589,179 @@ class BostonMarathon(MarathonBase):
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         return super().get_max_pages(year, num_results)
+
+
+class ChicagoMarathon(MarathonBase):
+    """
+    ### Class used to gather data of the Chicago marathon which will be used for scraping it.
+    """
+
+    def __init__(
+        self,
+        url_template: str = None,
+        split_url_template: str = None,
+        event_id: str = None,
+    ):
+        super().__init__(url_template, split_url_template)
+        self.NAME = "Chicago"
+        self.event_id = event_id
+
+    def prepare_res_urls(
+        self,
+        year: str,
+        pages: list[str],
+        event_id: str,
+        gender: list[str] = ["M", "W"],
+        num_results: str = "25",
+        flat_list: bool = False,
+    ) -> list[list[str], list[str]] | list[str]:
+        """
+        ### Method that creates the marathon results URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        - url: URL template to use.
+        - year: year of marathon as string.
+        - pages: A list that must only contain two elements the max pages for Men and Women.
+        - event_id: Event id to only select 'marathon' runners.
+        - gender: A list of that contains 2 elements M for men and W for women.
+        - num_results: The number of results in a page. (Default 25).
+        - flat_list: A boolean to decided wether to return a single list that contains \
+            all URLs or a list with 2 (men and women) inner URLs list
+        ---
+        ### Returns:
+        #### flat_list == False:
+        A list that contain two lists, the first one has all URLs of the men and the second one contains URLs of the women.
+        #### flat_list == True:
+        A list that contains all URLs for men and women pages.
+        """
+        if len(pages) != 2:
+            raise Exception(
+                " pages should contains exactly 2 elements first element is men max page number and the second one is the women max page number."
+            )
+        men_pages = int(pages[0])
+        women_pages = int(pages[1])
+        max_pages = max(men_pages, women_pages)
+        res_urls = [[], []]
+
+        # for year in years:
+        for page in range(1, max_pages + 1):
+            # Men
+            if page <= men_pages:
+                res_urls[0].append(
+                    self.url_template.format(
+                        year, str(page), gender[0], num_results, event_id
+                    )
+                )
+            # Women
+            if page <= women_pages:
+                res_urls[1].append(
+                    self.url_template.format(
+                        year, str(page), gender[1], num_results, event_id
+                    )
+                )
+        if flat_list:
+            # unpacking the lists into a single list.
+            return list(chain(*res_urls))
+        return res_urls
+
+    def prepare_split_urls(self, year: str, idps: list[str]) -> list[str]:
+        """
+        ### Method that create the personal splits URLs needed based on the years and pages lists.
+        ---
+        ### Arguments:
+        -
+        ---
+        ### Returns:
+        A list that contains all URLs for split page of the runner.
+        """
+        raise NotImplementedError()
+
+    def request_page(
+        self, year: str = None, pages: list[str] = None, num_results: str = "25"
+    ) -> tuple[requests.models.Response, requests.models.Response]:
+        """
+        ### Method to request an HTML page.
+        ---
+        ### Arguments:
+        - year: The year of the marathon.
+        - page: A list that must only contain two elements the max pages for Men and Women.
+        - num_results: The number of results in a page. (Default 25).
+        ---
+        ### Returns:
+        A tuple with two elements, the first contain the men webpage and the second contains the women webpage.
+        """
+        curr_url = self.prepare_res_urls(
+            year=year, pages=pages, event_id=self.event_id, num_results=num_results
+        )
+        try:
+            men_res_page = requests.get(curr_url[0][0])
+            women_res_page = requests.get(curr_url[1][0])
+            return (men_res_page, women_res_page)
+        except Exception as e:
+            print(f"Error Occurred: {e}")
+
+    def create_soup(self, webpage_content: bytes) -> BeautifulSoup:
+        return super().create_soup(webpage_content)
+
+    def get_max_pages(self, year: str, num_results: str = "25") -> list[str]:
+        """
+        ### Method used for getting the max page number for both men and women result pages.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default 25).
+        ---
+        ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
+        """
+        return super().get_max_pages(year, num_results)
+
+    def gen_res_scrap_info(
+        self,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default 25).
+        - scraped_fields:
+        - data_path:
+        - show_settings:
+        ---
+        ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
+        """
+        _max_pages = self.get_max_pages(year, num_results)
+        print(f"Men Pages: {_max_pages[0]} || Women Pages: {_max_pages[1]}")
+        # Results Pages URLs
+        pages_urls = self.prepare_res_urls(
+            year,
+            [_max_pages[0], _max_pages[1]],
+            event_id=self.event_id,
+            num_results=num_results,
+            flat_list=True,
+        )
+        print(f"{self.NAME} {year} total results pages: {len(pages_urls)}")
+        print(f"Example URLs: \n {pages_urls[0]} \n {pages_urls[int(_max_pages[0])]}")
+
+        # Spider settings.
+        res_settings = get_settings(
+            file_name=f"{self.NAME}{year}_res",
+            fields=scraped_fields,
+            _format="csv",
+            overwrite=True,
+            data_path=data_path,
+        )
+
+        if show_settings:
+            print(f"Settings: \n{res_settings}")
+
+        return (pages_urls, res_settings)
+
+    def gen_splits_scrap_info(self):
+        raise NotImplementedError()
