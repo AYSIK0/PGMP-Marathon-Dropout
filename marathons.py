@@ -619,7 +619,6 @@ class ChicagoMarathon(MarathonBase):
         ### Method that creates the marathon results URLs needed based on the years and pages lists.
         ---
         ### Arguments:
-        - url: URL template to use.
         - year: year of marathon as string.
         - pages: A list that must only contain two elements the max pages for Men and Women.
         - event_id: Event id to only select 'marathon' runners.
@@ -674,7 +673,7 @@ class ChicagoMarathon(MarathonBase):
         ### Returns:
         A list that contains all URLs for split page of the runner.
         """
-        raise NotImplementedError()
+        return super().prepare_split_urls(self.split_url_template, year, idps)
 
     def request_page(
         self, year: str = None, pages: list[str] = None, num_results: str = "25"
@@ -763,5 +762,41 @@ class ChicagoMarathon(MarathonBase):
 
         return (pages_urls, res_settings)
 
-    def gen_splits_scrap_info(self):
-        raise NotImplementedError()
+    def gen_splits_scrap_info(
+        self,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - year:
+        - num_results:
+        - scraped_fields:
+        - data_path:
+        - marathon_name:
+        - show_settings:
+        ---
+        ### Returns:
+        """
+
+        splits_urls = self.prepare_split_urls(year, idps)
+
+        split_settings = get_settings(
+            file_name=f"{self.NAME}{year}_splits",
+            fields=scraped_fields,
+            _format="csv",
+            overwrite=True,
+            data_path=data_path,
+        )
+
+        print(f"{self.NAME} {year} total splits pages: {len(splits_urls)}")
+        print(f"Example URLs: \n {splits_urls[0]} \n {splits_urls[-1]}")
+        if show_settings:
+            print(split_settings)
+
+        return (splits_urls, split_settings)
