@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Final
 from itertools import chain
-from bs4 import BeautifulSoup
 import requests
+import warnings
+from bs4 import BeautifulSoup
 from utils import get_settings
 
 
@@ -728,12 +729,12 @@ class ChicagoMarathon(MarathonBase):
         ---
         ### Arguments:
         - year: The year of marathon
-        - num_results: The number of results to be displayed per page (Default 25).
-        - scraped_fields:
-        - data_path:
-        - show_settings:
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
         ---
-        ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
         """
         _max_pages = self.get_max_pages(year, num_results)
         print(f"Men Pages: {_max_pages[0]} || Women Pages: {_max_pages[1]}")
@@ -764,27 +765,33 @@ class ChicagoMarathon(MarathonBase):
 
     def gen_splits_scrap_info(
         self,
-        year: str,
         idps: list[str],
         scraped_fields: list[str],
         data_path: str,
+        year: str = None,
         show_settings: bool = False,
     ) -> tuple[list[str], dict]:
         """
         ### Function to generate the URLs for runners splits pages, based on idps.
+        #### N.B: if `year` and the `event_id` (the attribute) are both given the `year` arg is used instead.
         ---
         ### Arguments:
-        - year:
-        - num_results:
-        - scraped_fields:
-        - data_path:
-        - marathon_name:
-        - show_settings:
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - year: The year of marathon (Default: None) `Check N.B`.
+        - show_settings: Bool to print the settings created (Default: False).
         ---
-        ### Returns:
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
         """
-
-        splits_urls = self.prepare_split_urls(year, idps)
+        if year and self.event_id:
+            warnings.warn(
+                f"Both year: {year} and event_id: {self.event_id}; the `year` arg has been used.\n"
+            )
+        if year:
+            splits_urls = self.prepare_split_urls(year, idps)
+        else:
+            splits_urls = self.prepare_split_urls(self.event_id, idps)
 
         split_settings = get_settings(
             file_name=f"{self.NAME}{year}_splits",
