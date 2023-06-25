@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Final
 from itertools import chain
 import requests
-import warnings
 from bs4 import BeautifulSoup
-from utils import get_settings
+from utils.scrap_utils import get_settings
 
 
 class MarathonBase(ABC):
