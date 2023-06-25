@@ -115,3 +115,13 @@ class BostonSplitItem(MarathonsSplitItem):
         super().__init__()
 
     age_cat: str = scrapy.Field()
+
+
+class ChicagoItem(MarathonsScrapyItem):
+    def __init__(self):
+        super().__init__()
+
+
+class ChicagoSplitItem(MarathonsSplitItem):
+    def __init__(self):
+        super().__init__()
