@@ -9,4 +9,5 @@ __all__ = [
     "houston_spiders",
     "stockholm_spiders",
     "boston_spiders",
+    "chicago_spiders",
 ]
