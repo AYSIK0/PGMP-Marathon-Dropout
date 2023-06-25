@@ -765,33 +765,30 @@ class ChicagoMarathon(MarathonBase):
 
     def gen_splits_scrap_info(
         self,
+        year: str,
         idps: list[str],
         scraped_fields: list[str],
         data_path: str,
-        year: str = None,
         show_settings: bool = False,
+        use_event_id: bool = False,
     ) -> tuple[list[str], dict]:
         """
         ### Function to generate the URLs for runners splits pages, based on idps.
-        #### N.B: if `year` and the `event_id` (the attribute) are both given the `year` arg is used instead.
         ---
         ### Arguments:
+        - year: The year of marathon.
         - idps: List of runners ids.
         - scraped_fields: The fields which will be saved from the scraped data.
         - data_path: The path to save the scraped data file.
-        - year: The year of marathon (Default: None) `Check N.B`.
-        - show_settings: Bool to print the settings created (Default: False).
+        - use_event_id: Bool, to use_event_id instead of year.
+        - show_settings: Bool, to print the settings created (Default: False).
         ---
         ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
         """
-        if year and self.event_id:
-            warnings.warn(
-                f"Both year: {year} and event_id: {self.event_id}; the `year` arg has been used.\n"
-            )
-        if year:
-            splits_urls = self.prepare_split_urls(year, idps)
-        else:
+        if use_event_id:
             splits_urls = self.prepare_split_urls(self.event_id, idps)
+        else:
+            splits_urls = self.prepare_split_urls(year, idps)
 
         split_settings = get_settings(
             file_name=f"{self.NAME}{year}_splits",
