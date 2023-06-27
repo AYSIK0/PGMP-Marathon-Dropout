@@ -8,8 +8,5 @@ __pycache__
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# Temp Files
-Jonathan
-test_scraper
-outdated
+# Dataset
 Marathons_Data
