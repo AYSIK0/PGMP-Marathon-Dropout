@@ -170,6 +170,95 @@ class MarathonBase(ABC):
         max_women_pages = women_soup.select('div[class*="pages"] a')[-2].text
         return (max_men_pages, max_women_pages)
 
+    @abstractmethod
+    def gen_res_scrap_info(
+        self,
+        name: str,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - name: Name of marathon
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        _max_pages = self.get_max_pages(year, num_results)
+        print(f"Men Pages: {_max_pages[0]} || Women Pages: {_max_pages[1]}")
+
+        pages_urls = self.prepare_res_urls(
+            year,
+            [_max_pages[0], _max_pages[1]],
+            num_results=num_results,
+            flat_list=True,
+        )
+        print(f"{name} {year} total results pages: {len(pages_urls)}")
+        print(f"Example URLs: \n {pages_urls[0]} \n {pages_urls[int(_max_pages[0])]}")
+
+        res_settings = get_settings(
+            file_name=f"{name}{year}_res",
+            fields=scraped_fields,
+            _format="csv",
+            overwrite=True,
+            data_path=data_path,
+        )
+
+        if show_settings:
+            print(f"Settings: \n{res_settings}")
+
+        return (pages_urls, res_settings)
+
+    @abstractmethod
+    def gen_splits_scrap_info(
+        self,
+        name: str,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - name: Name of marathon.
+        - year: The year of marathon.
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool, to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        splits_urls = self.prepare_split_urls(year, idps)
+
+        split_settings = get_settings(
+            file_name=f"{name}{year}_splits",
+            fields=scraped_fields,
+            _format="csv",
+            overwrite=True,
+            data_path=data_path,
+        )
+
+        print(f"{name} {year} total splits pages: {len(splits_urls)}")
+        print(f"Example URLs: \n {splits_urls[0]} \n {splits_urls[-1]}")
+        if show_settings:
+            print(split_settings)
+
+        return (splits_urls, split_settings)
+
 
 class LondonMarathon(MarathonBase):
     """
@@ -180,6 +269,7 @@ class LondonMarathon(MarathonBase):
         self, url_template: str = None, split_url_template: str = None
     ) -> None:
         super().__init__(url_template, split_url_template)
+        self.__NAME = "London"
 
     def prepare_res_urls(
         self,
@@ -253,6 +343,55 @@ class LondonMarathon(MarathonBase):
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         return super().get_max_pages(year, num_results)
+
+    def gen_res_scrap_info(
+        self,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_res_scrap_info(
+            self.__NAME, year, num_results, scraped_fields, data_path, show_settings
+        )
+
+    def gen_splits_scrap_info(
+        self,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - year: The year of marathon.
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool, to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_splits_scrap_info(
+            self.__NAME, year, idps, scraped_fields, data_path, show_settings
+        )
 
 
 class HamburgMarathon(MarathonBase):
@@ -264,6 +403,7 @@ class HamburgMarathon(MarathonBase):
         self, url_template: str = None, split_url_template: str = None
     ) -> None:
         super().__init__(url_template, split_url_template)
+        self.__NAME = "Hamburg"
 
     def prepare_res_urls(
         self,
@@ -337,6 +477,55 @@ class HamburgMarathon(MarathonBase):
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         return super().get_max_pages(year, num_results)
+
+    def gen_res_scrap_info(
+        self,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_res_scrap_info(
+            self.__NAME, year, num_results, scraped_fields, data_path, show_settings
+        )
+
+    def gen_splits_scrap_info(
+        self,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - year: The year of marathon.
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool, to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_splits_scrap_info(
+            self.__NAME, year, idps, scraped_fields, data_path, show_settings
+        )
 
 
 class HoustonMarathon(MarathonBase):
@@ -348,6 +537,7 @@ class HoustonMarathon(MarathonBase):
         self, url_template: str = None, split_url_template: str = None
     ) -> None:
         super().__init__(url_template, split_url_template)
+        self.__NAME = "Houston"
 
     def prepare_res_urls(
         self,
@@ -421,6 +611,55 @@ class HoustonMarathon(MarathonBase):
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         return super().get_max_pages(year, num_results)
+
+    def gen_res_scrap_info(
+        self,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_res_scrap_info(
+            self.__NAME, year, num_results, scraped_fields, data_path, show_settings
+        )
+
+    def gen_splits_scrap_info(
+        self,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - year: The year of marathon.
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool, to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_splits_scrap_info(
+            self.__NAME, year, idps, scraped_fields, data_path, show_settings
+        )
 
 
 class StockHolmMarathon(MarathonBase):
@@ -432,6 +671,7 @@ class StockHolmMarathon(MarathonBase):
         self, url_template: str = None, split_url_template: str = None
     ) -> None:
         super().__init__(url_template, split_url_template)
+        self.__NAME = "Stockholm"
 
     def prepare_res_urls(
         self,
@@ -505,6 +745,55 @@ class StockHolmMarathon(MarathonBase):
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         return super().get_max_pages(year, num_results)
+
+    def gen_res_scrap_info(
+        self,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_res_scrap_info(
+            self.__NAME, year, num_results, scraped_fields, data_path, show_settings
+        )
+
+    def gen_splits_scrap_info(
+        self,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - year: The year of marathon.
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool, to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_splits_scrap_info(
+            self.__NAME, year, idps, scraped_fields, data_path, show_settings
+        )
 
 
 class BostonMarathon(MarathonBase):
@@ -516,6 +805,7 @@ class BostonMarathon(MarathonBase):
         self, url_template: str = None, split_url_template: str = None
     ) -> None:
         super().__init__(url_template, split_url_template)
+        self.__NAME = "Boston"
 
     def prepare_res_urls(
         self,
@@ -589,6 +879,55 @@ class BostonMarathon(MarathonBase):
         ### Returns: A list with 2 elements, the first and second is max page number for men and women respectively.
         """
         return super().get_max_pages(year, num_results)
+
+    def gen_res_scrap_info(
+        self,
+        year: str,
+        num_results: str,
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Method to generate the URLs for the results pages of a marathon, \
+        the number of URLs dependents on the max pages found in a page with the specified number of results.
+        ---
+        ### Arguments:
+        - year: The year of marathon
+        - num_results: The number of results to be displayed per page (Default: 25).
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_res_scrap_info(
+            self.__NAME, year, num_results, scraped_fields, data_path, show_settings
+        )
+
+    def gen_splits_scrap_info(
+        self,
+        year: str,
+        idps: list[str],
+        scraped_fields: list[str],
+        data_path: str,
+        show_settings: bool = False,
+    ) -> tuple[list[str], dict]:
+        """
+        ### Function to generate the URLs for runners splits pages, based on idps.
+        ---
+        ### Arguments:
+        - year: The year of marathon.
+        - idps: List of runners ids.
+        - scraped_fields: The fields which will be saved from the scraped data.
+        - data_path: The path to save the scraped data file.
+        - show_settings: Bool, to print the settings created (Default: False).
+        ---
+        ### Returns: A tuple with 2 elements, the first is a list of URLs while the second is dictionary of settings.
+        """
+        return super().gen_splits_scrap_info(
+            self.__NAME, year, idps, scraped_fields, data_path, show_settings
+        )
 
 
 class ChicagoMarathon(MarathonBase):
@@ -603,7 +942,7 @@ class ChicagoMarathon(MarathonBase):
         event_id: str = None,
     ):
         super().__init__(url_template, split_url_template)
-        self.NAME = "Chicago"
+        self.__NAME = "Chicago"
         self.event_id = event_id
 
     def prepare_res_urls(
@@ -745,12 +1084,12 @@ class ChicagoMarathon(MarathonBase):
             num_results=num_results,
             flat_list=True,
         )
-        print(f"{self.NAME} {year} total results pages: {len(pages_urls)}")
+        print(f"{self.__NAME} {year} total results pages: {len(pages_urls)}")
         print(f"Example URLs: \n {pages_urls[0]} \n {pages_urls[int(_max_pages[0])]}")
 
         # Spider settings.
         res_settings = get_settings(
-            file_name=f"{self.NAME}{year}_res",
+            file_name=f"{self.__NAME}{year}_res",
             fields=scraped_fields,
             _format="csv",
             overwrite=True,
@@ -790,16 +1129,16 @@ class ChicagoMarathon(MarathonBase):
             splits_urls = self.prepare_split_urls(year, idps)
 
         split_settings = get_settings(
-            file_name=f"{self.NAME}{year}_splits",
+            file_name=f"{self.__NAME}{year}_splits",
             fields=scraped_fields,
             _format="csv",
             overwrite=True,
             data_path=data_path,
         )
 
-        print(f"{self.NAME} {year} total splits pages: {len(splits_urls)}")
+        print(f"{self.__NAME} {year} total splits pages: {len(splits_urls)}")
         print(f"Example URLs: \n {splits_urls[0]} \n {splits_urls[-1]}")
         if show_settings:
-            print(split_settings)
+            print(f"Settings: \n{split_settings}")
 
         return (splits_urls, split_settings)
