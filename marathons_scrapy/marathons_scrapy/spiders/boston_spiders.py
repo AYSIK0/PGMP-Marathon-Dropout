@@ -11,10 +11,12 @@ class Boston1417(scrapy.Spider):
 
     name = "boston14_17"
 
-    def __init__(self, urls: list[str], splits: bool = False, first_split_idx: int = 1):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
-        self.first_split_idx = first_split_idx
+        self.first_split_idx = (
+            kwargs.get("first_split_idx") if kwargs.get("first_split_idx") else 1
+        )
         super().__init__()
 
     # Logging info
@@ -98,10 +100,12 @@ class Boston1823(scrapy.Spider):
 
     name = "boston18_23"
 
-    def __init__(self, urls: list[str], splits: bool = False, first_split_idx: int = 1):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
-        self.first_split_idx = first_split_idx
+        self.first_split_idx = (
+            kwargs.get("first_split_idx") if kwargs.get("first_split_idx") else 1
+        )
         self.splits_names = {
             "5K",
             "10K",
@@ -129,7 +133,7 @@ class Boston1823(scrapy.Spider):
             for url in urls:
                 yield scrapy.Request(url=url, callback=self.parse_split)
         else:
-            # This needed since the run_no between 2018 - 2019 is div[3]; from 2021 onward it is div[2]
+            # This is needed since the run_no between 2018 - 2019 is div[3]; from 2021 onward it is div[2]
             year = int(re.search("(?<=/)\d{4}(?=/)", urls[0]).group())
             if year > 2019:
                 self.run_div_idx = 2
@@ -171,7 +175,7 @@ class Boston1823(scrapy.Spider):
         splits = response.xpath('//div[@class="detail-box box-splits"]//tr')
         keys = BostonSplitItem.get_split_keys()
 
-        # This is used to keep count of how many splits need be skipped since boston marathon provide extra splits in miles. (HOTFIX) (Find Better solution).
+        # This is used to keep count of how many splits need be skipped since boston marathon provide extra splits in miles.
         extra_splits = 0
         for i, split in enumerate(splits[self.first_split_idx :]):
             if split.xpath("th/text()").get().strip() in self.splits_names:

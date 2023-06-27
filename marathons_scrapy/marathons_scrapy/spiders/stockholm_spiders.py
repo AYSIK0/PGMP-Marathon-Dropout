@@ -11,7 +11,7 @@ class Stockholm2122(scrapy.Spider):
 
     name = "stockholm21_22"
 
-    def __init__(self, urls: list[str], splits: bool = False):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
         super().__init__()
@@ -75,6 +75,7 @@ class Stockholm2122(scrapy.Spider):
         if (
             # Check if runners have finish split (including empty one).
             split_item.get("k_finish")
+            # Check if time is available (some runners might have finish speed or pace but no time).
             and split_item["k_finish"][0]
             and re.match("(\d{2}:\d{2}:\d{2})", split_item["k_finish"][0])
         ):

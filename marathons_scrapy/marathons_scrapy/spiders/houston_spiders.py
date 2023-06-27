@@ -11,7 +11,7 @@ class Houston1819(scrapy.Spider):
 
     name = "houston18_19"
 
-    def __init__(self, urls: list[str], splits: bool = False):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
         super().__init__()

@@ -4,11 +4,6 @@ import logging
 import re
 
 
-# TODO DELETE
-# Command to test: scrapy crawl london14_18 -a urls=None -O london14_test.csv
-# Command to test splits: scrapy crawl london14_18 -a splits=True -a urls=None -O london14_splits_test.csv
-
-
 class LondonSpider1418(scrapy.Spider):
     """
     ### Scrapy spider used to scrap London marathon data between 2014 - 2018
@@ -16,7 +11,7 @@ class LondonSpider1418(scrapy.Spider):
 
     name = "london14_18"
 
-    def __init__(self, urls: list[str], splits: bool = False):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
         super().__init__()
@@ -76,8 +71,6 @@ class LondonSpider1418(scrapy.Spider):
         yield split_item
 
 
-# Command to test: scrapy crawl london19_23 -a urls=None -O london19_test.csv
-# Command to test splits: scrapy crawl london19_23 -a splits=True -a urls=None -O london19_splits_test.csv
 class LondonSpider1923(scrapy.Spider):
     """
     ### Scrapy spider used to scrap London marathon data between 2019 - 2023
@@ -85,7 +78,7 @@ class LondonSpider1923(scrapy.Spider):
 
     name = "london19_23"
 
-    def __init__(self, urls: list[str], splits: bool = False):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
         super().__init__()

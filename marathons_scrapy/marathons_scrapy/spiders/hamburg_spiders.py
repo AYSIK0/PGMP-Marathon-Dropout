@@ -11,7 +11,7 @@ class Hamburg1317(scrapy.Spider):
 
     name = "hamburg13_17"
 
-    def __init__(self, urls: list[str], splits: bool = False):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
         super().__init__()
@@ -77,7 +77,7 @@ class Hamburg1823(scrapy.Spider):
 
     name = "hamburg18_23"
 
-    def __init__(self, urls: list[str], splits: bool = False):
+    def __init__(self, urls: list[str], splits: bool = False, **kwargs):
         self.urls: str = urls
         self.splits: bool = splits
         super().__init__()
