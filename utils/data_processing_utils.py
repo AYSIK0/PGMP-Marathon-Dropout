@@ -15,29 +15,34 @@ def london_cleaner(
     ### Returns a new DataFrame after applying the operations below.
     1. Convert columns into best possible dtype using `convert_dtypes()`.
     2. Columns in `cols_to_drop` are removed.
-    3. Replacing `['-', ', -, {SPACE}]` with an empty character.
-    4. The time and pace for each split in `splits_keys` are converted into seconds.
-    5. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
+    3. Remove runners that did not start the marathon `race_stat = Not Started`
+    4. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    5. The time and pace for each split in `splits_keys` are converted into seconds.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
     """
     df = df.copy()
-    # 1. Convert columns into best possible dtypes (Currently dtypes are inferred).
+    # 1. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     # 2. Removing unused columns.
     if cols_to_drop and len(cols_to_drop) >= 1:
         df.drop(cols_to_drop, axis=1, inplace=True)
 
-    # 3. Replace the characters in to_replace by the char in value. N.B Works but Slow.
+    # 3. Removing runners did not start.
+    print(f"Total samples before removing 'Not Started' runners: {len(df)}")
+    df = df.drop(df.loc[df.race_state == "Not Started"].index).reset_index(drop=True)
+    print(f"Total samples after removing 'Not Started' runners: {len(df)}")
+
+    # 4. Replace the characters in to_replace by the char in value. N.B Works but Slow.
     cols_to_ignore = ["age_cat", "gender", "race_state", "last_split"]
     df.loc[:, df.columns.difference(cols_to_ignore)] = df.loc[
         :, df.columns.difference(cols_to_ignore)
     ].replace(to_replace=r"('-'|'+|-| )", value="", regex=True)
-    # df.replace(to_replace=r"('-'|'+|-| )", value='', regex=True, inplace=True)
 
-    # 4. Converting time and pace into seconds.
+    # 5. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 5. Converting dtype.
+    # 6. Converting dtype.
     df = convert_dtype(df, splits_keys)
     return df
 
