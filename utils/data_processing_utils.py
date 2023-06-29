@@ -1,4 +1,5 @@
 import pandas as pd
+from pathlib import Path
 
 
 def london_cleaner(
@@ -96,3 +97,20 @@ def convert_dtype(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
             df[f"{key}_speed"], errors="coerce", downcast="float"
         ).astype("float32")
     return df
+
+
+def save_df(df: pd.DataFrame, file_path: str) -> None:
+    """
+    ### Function to save Pandas DataFrame, `file_path` should contain the full path where to save the DataFrame and the file name with `csv` extension.
+    ----
+    ### Arguments:
+    + df: DataFrame to save.
+    + file_path: Must include the path where to save file and the file name.
+    ----
+    ### Returns: None
+    """
+    f_path = "/".join(file_path.split("/")[:-1])
+    f_path = Path(f_path)
+    if not f_path.exists():
+        f_path.mkdir(parents=True, exist_ok=True)
+    df.to_csv(file_path, index=False)
