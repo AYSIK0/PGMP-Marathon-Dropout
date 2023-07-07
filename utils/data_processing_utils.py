@@ -17,10 +17,11 @@ def london_cleaner(
     ### Returns a new DataFrame after applying the operations below.
     1. Columns in `cols_to_drop` are removed.
     2. Remove runners that did not start the marathon `race_stat = Not Started`
-    3. Replacing `['-', ', -, {SPACE}]` with an empty character.
-    4. The time and pace for each split in `splits_keys` are converted into seconds.
-    5. Convert columns into best possible dtype using `convert_dtypes()`.
-    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
+    3. Dropping runners that do not have a non-null value in these columns `[age_cat, gender, last_split]`.
+    4. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    5. The time and pace for each split in `splits_keys` are converted into seconds.
+    6. Convert columns into best possible dtype using `convert_dtypes()`.
+    7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -28,23 +29,29 @@ def london_cleaner(
         df.drop(cols_to_drop, axis=1, inplace=True)
 
     # 2. Removing runners did not start.
-    print(f"Total samples before removing 'Not Started' runners: {len(df)}")
+    print("Removing Runners That did not start: ")
+    rows_count = len(df)
     df = df.drop(df.loc[df.race_state == "Not Started"].index).reset_index(drop=True)
-    print(f"Total samples after removing 'Not Started' runners: {len(df)}")
+    print(
+        f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
+    )
 
-    # 3. Replace the characters in to_replace by the char in value. N.B Works but Slow.
+    # 3. Dropping runners that do not have a non-null value in these columns [age_cat, gender, last_split]
+    df = drop_null_by_col(df, ["age_cat", "gender", "last_split"])
+
+    # 4. Replace the characters in to_replace by the char in value. N.B Works but Slow.
     cols_to_ignore = ["age_cat", "gender", "race_state", "last_split"]
     df.loc[:, df.columns.difference(cols_to_ignore)] = df.loc[
         :, df.columns.difference(cols_to_ignore)
     ].replace(to_replace=r"('-'|'+|-| )", value="", regex=True)
 
-    # 4. Converting time and pace into seconds.
+    # 5. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 5. Convert columns into best possible dtypes (dtypes are inferred).
+    # 6. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
-    # 6. Converting dtype.
+    # 7. Converting dtype.
     df = convert_dtype(df, splits_keys)
 
     return df
@@ -116,3 +123,23 @@ def save_df(df: pd.DataFrame, file_path: str) -> None:
     if not f_path.exists():
         f_path.mkdir(parents=True, exist_ok=True)
     df.to_csv(file_path, index=False)
+
+
+def drop_null_by_col(df: pd.DataFrame, cols: str) -> pd.DataFrame:
+    """
+    ### Function to drop rows if they have a Null value in the specified column.
+    ----
+    ### Arguments
+    + df: The DataFrame to be used.
+    + cols: Columns name to check for null values.
+    ----
+    ### Returns the DataFrame after rows with null values have been dropped.
+    """
+    for col in cols:
+        org_count = len(df)
+        df.dropna(subset=col, inplace=True)
+        dropped_count = org_count - len(df)
+        print(
+            f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows based on {col.center(11)}: {dropped_count}"
+        )
+    return df
