@@ -40,10 +40,7 @@ def london_cleaner(
     df = drop_null_by_col(df, ["age_cat", "gender", "last_split"])
 
     # 4. Replace the characters in to_replace by the char in value. N.B Works but Slow.
-    cols_to_ignore = ["age_cat", "gender", "race_state", "last_split"]
-    df.loc[:, df.columns.difference(cols_to_ignore)] = df.loc[
-        :, df.columns.difference(cols_to_ignore)
-    ].replace(to_replace=r"('-'|'+|-| )", value="", regex=True)
+    df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
 
     # 5. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
@@ -142,4 +139,27 @@ def drop_null_by_col(df: pd.DataFrame, cols: str) -> pd.DataFrame:
         print(
             f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows based on {col.center(11)}: {dropped_count}"
         )
+    return df
+
+
+def replace_value_in_cols(
+    df: pd.DataFrame, regex_pattern: str = "('-'|'+|-| )", replace_value: str = ""
+):
+    """
+    ### Function to replace the characters in the `regex_pattern` by `replace_pattern`, it utilise pandas replace function with `regex=True`.
+    #### N.B The function only check split columns, their name start with `k_`.
+    ----
+    ### Arguments:
+    + df: DataFrame to operate on.
+    + regex_pattern: The regex pattern to match characters to.
+        Default: `('-'|'+|-| )`; which matches `(hyphen: - or '-') or (apostrophe: ') or (space: )`.
+    + replace_value: The character to replace the matched value.
+        Default: empty string.
+    ----
+    ### Returns the DataFrame after replacing the match characters with the new value.
+    """
+    cols = df.columns.str.startswith("k_")
+    df.loc[:, cols] = df.loc[:, cols].replace(
+        to_replace=regex_pattern, value=replace_value, regex=True
+    )
     return df
