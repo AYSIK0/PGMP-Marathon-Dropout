@@ -74,6 +74,7 @@ def convert_to_sec(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
             .dt.seconds
         )
         # Adding "00:" prefix to the pace to change its format from mm:ss -> hh:mm:ss
+        # if the pace is already in the correct format (hh:mm:ss) it is not changed
         non_null_rows = ~df[k_pace].isnull()
         df.loc[non_null_rows, k_pace] = df.loc[non_null_rows, k_pace].map(
             lambda x: "00:" + x if len(x) == 5 else x
@@ -143,7 +144,7 @@ def drop_null_by_col(df: pd.DataFrame, cols: str) -> pd.DataFrame:
 
 
 def replace_value_in_cols(
-    df: pd.DataFrame, regex_pattern: str = "('-'|'+|-| )", replace_value: str = ""
+    df: pd.DataFrame, regex_pattern: str = "('-'|'+|-| )", replace_value=None
 ):
     """
     ### Function to replace the characters in the `regex_pattern` by `replace_pattern`, it utilise pandas replace function with `regex=True`.
@@ -154,7 +155,7 @@ def replace_value_in_cols(
     + regex_pattern: The regex pattern to match characters to.
         Default: `('-'|'+|-| )`; which matches `(hyphen: - or '-') or (apostrophe: ') or (space: )`.
     + replace_value: The character to replace the matched value.
-        Default: empty string.
+        Default: None.
     ----
     ### Returns the DataFrame after replacing the match characters with the new value.
     """
