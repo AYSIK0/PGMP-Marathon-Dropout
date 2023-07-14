@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 from pathlib import Path
+import re
 
 
 def london_cleaner(
@@ -29,7 +31,7 @@ def london_cleaner(
         df.drop(cols_to_drop, axis=1, inplace=True)
 
     # 2. Removing runners did not start.
-    print("Removing Runners That did not start: ")
+    print("Removing Runners That did not start")
     rows_count = len(df)
     df = df.drop(df.loc[df.race_state == "Not Started"].index).reset_index(drop=True)
     print(
@@ -39,7 +41,7 @@ def london_cleaner(
     # 3. Dropping runners that do not have a non-null value in these columns [age_cat, gender, last_split]
     df = drop_null_by_col(df, ["age_cat", "gender", "last_split"])
 
-    # 4. Replace the characters in to_replace by the char in value. N.B Works but Slow.
+    # 4. Replace the characters in `to_replace` by the `replace_value`. N.B Works but Slow.
     df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
 
     # 5. Converting time and pace into seconds.
@@ -49,7 +51,85 @@ def london_cleaner(
     df = df.convert_dtypes()
 
     # 7. Converting dtype.
-    df = convert_dtype(df, splits_keys)
+    df = convert_split_dtype(df, splits_keys)
+
+    return df
+
+
+def hamburg_cleaner(
+    df: pd.DataFrame,
+    splits_keys: list[str],
+    cols_to_drop: list[str],
+    last_split_std: dict,
+    cols_order: list[str],
+) -> pd.DataFrame:
+    """
+    ### Function to clean London marathons' data.
+    #### `N.B` A copy of the original DataFrame is returned after all operations are performed.
+    ----
+    ### Arguments:
+    + df: DataFrame with data to convert.
+    + splits_keys: Name of split columns.
+    + cols_to_drop: Name of columns to remove from the DataFrame.
+    + last_split_std: Dictionary of key value pair of old last_split column names `key` and the new ones `values`.
+    + cols_order:
+    ----
+    ### Returns a new DataFrame after applying the operations below.
+    1. Columns in `cols_to_drop` are removed.
+    2. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    3. Remove runners that did not start the marathon `All the splits columns values are None`.
+    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender, last_split]`.
+    5. The time and pace for each split in `splits_keys` are converted into seconds.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
+    7. Adding the `last_split` and `race_state` columns.
+    8. Replacing `last_split` and `last_split` values with the standard ones.
+    9. Reordering the DataFrame columns according to cols_order.
+    10. Convert columns into best possible dtype using `convert_dtypes()`.
+    """
+    df = df.copy()
+    # 1. Removing unused columns.
+    if cols_to_drop and len(cols_to_drop) >= 1:
+        df.drop(cols_to_drop, axis=1, inplace=True)
+
+    # 2. Replace the characters in `to_replace` by the `replace_value`. N.B Works but Slow.
+    df = replace_value_in_cols(df)
+
+    # 3. Removing runners did not start. (if all splits columns are null then the runner did not start.)
+    print("Removing Runners That did not start")
+    rows_count = len(df)
+    not_started_indices = df[
+        df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
+    ].index
+    df.drop(index=not_started_indices, inplace=True)
+    print(
+        f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
+    )
+
+    # 4. Dropping runners that do not have a non-null value in these columns [age_cat, gender]
+    df = drop_null_by_col(df, ["age_cat", "gender"])
+
+    # 5. Converting time and pace into seconds.
+    df = convert_to_sec(df, splits_keys)
+
+    # 6. Converting splits' time, pace, and speed dtype.
+    df = convert_split_dtype(df, splits_keys)
+
+    # 7. Adding the `last_split` and `race_state` columns.
+    df["last_split"] = df.iloc[:, df.columns.str.contains("time")].idxmax(axis=1)
+    df["race_state"] = np.where(
+        df["last_split"] == "k_finish_time", "Finished", "Started"
+    )
+
+    # 8. Replacing `last_split` and `last_split` values with the standard ones.
+    age_cat_std = get_age_cat_dict(df)
+    df["age_cat"] = df["age_cat"].replace(age_cat_std)
+    df["last_split"] = df["last_split"].replace(last_split_std)
+
+    # 9. Reordering the DataFrame columns.
+    df = df[cols_order]
+
+    # 10. Convert columns into best possible dtypes (dtypes are inferred).
+    df = df.convert_dtypes()
 
     return df
 
@@ -87,7 +167,7 @@ def convert_to_sec(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
     return df
 
 
-def convert_dtype(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
+def convert_split_dtype(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
     """
     ### Function to convert the splits' time, pace, and speed dtype.
     ----
@@ -164,3 +244,50 @@ def replace_value_in_cols(
         to_replace=regex_pattern, value=replace_value, regex=True
     )
     return df
+
+
+def get_age_cat_dict(df: pd.DataFrame) -> dict:
+    """
+    ### Function to get the age_cat translation dictionary.
+    ----
+    ### Arguments:
+    df: The DataFrame.
+    ----
+    ### Returns a dictionary with the values of `age_cat` as `key` and a value from this list
+    `['18-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70-74', '75-79', '80+']` as the `value` pair.
+    """
+    age_cat_dict = {}
+    # Extracting the age range form the age_cat.
+    for key in df["age_cat"].unique().tolist():
+        match = re.search(r"(?<= |\w)\d{2}(?= |:)|(?<=H)\s(?=1)", key)
+        if match:
+            age_cat_dict[key] = match.group()
+        else:
+            age_cat_dict[key] = key
+
+    # Replacing the age range with the age_cat standard values.
+    for key, value in age_cat_dict.items():
+        match value:
+            case " " | "20" | "U20" | "30" | "35":
+                age_cat_dict[key] = "18-39"
+            case "40":
+                age_cat_dict[key] = "40-44"
+            case "45":
+                age_cat_dict[key] = "45-49"
+            case "50":
+                age_cat_dict[key] = "50-54"
+            case "55":
+                age_cat_dict[key] = "55-59"
+            case "60":
+                age_cat_dict[key] = "60-64"
+            case "65":
+                age_cat_dict[key] = "65-59"
+            case "70":
+                age_cat_dict[key] = "70-74"
+            case "75":
+                age_cat_dict[key] = "75-79"
+            case "80" | "85":
+                age_cat_dict[key] = "80+"
+            case _:
+                age_cat_dict[key] = value
+    return age_cat_dict
