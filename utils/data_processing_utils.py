@@ -64,7 +64,7 @@ def hamburg_cleaner(
     cols_order: list[str],
 ) -> pd.DataFrame:
     """
-    ### Function to clean London marathons' data.
+    ### Function to clean Hamburg marathons' data.
     #### `N.B` A copy of the original DataFrame is returned after all operations are performed.
     ----
     ### Arguments:
@@ -72,7 +72,7 @@ def hamburg_cleaner(
     + splits_keys: Name of split columns.
     + cols_to_drop: Name of columns to remove from the DataFrame.
     + last_split_std: Dictionary of key value pair of old last_split column names `key` and the new ones `values`.
-    + cols_order:
+    + cols_order: The order of the returned DataFrame columns, it's a list of columns' names arranged in the desired order.
     ----
     ### Returns a new DataFrame after applying the operations below.
     1. Columns in `cols_to_drop` are removed.
@@ -121,7 +121,7 @@ def hamburg_cleaner(
     )
 
     # 8. Replacing `last_split` and `last_split` values with the standard ones.
-    age_cat_std = get_age_cat_dict(df)
+    age_cat_std = get_ham_age_cat_dict(df)
     df["age_cat"] = df["age_cat"].replace(age_cat_std)
     df["last_split"] = df["last_split"].replace(last_split_std)
 
@@ -246,12 +246,12 @@ def replace_value_in_cols(
     return df
 
 
-def get_age_cat_dict(df: pd.DataFrame) -> dict:
+def get_ham_age_cat_dict(df: pd.DataFrame) -> dict:
     """
     ### Function to get the age_cat translation dictionary.
     ----
     ### Arguments:
-    df: The DataFrame.
+    + df: The DataFrame.
     ----
     ### Returns a dictionary with the values of `age_cat` as `key` and a value from this list
     `['18-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70-74', '75-79', '80+']` as the `value` pair.
