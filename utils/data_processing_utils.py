@@ -18,41 +18,47 @@ def london_cleaner(
     ----
     ### Returns a new DataFrame after applying the operations below.
     1. Columns in `cols_to_drop` are removed.
-    2. Remove runners that did not start the marathon `race_stat = Not Started`
-    3. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
-    4. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    2. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    3. Remove runners that did not start the marathon `race_stat = Not Started` or `all splits' data is null`.
+    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
-    6. Convert columns into best possible dtype using `convert_dtypes()`.
-    7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    7. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
     if cols_to_drop and len(cols_to_drop) >= 1:
         df.drop(cols_to_drop, axis=1, inplace=True)
 
-    # 2. Removing runners did not start.
-    print("** Removing Runners That did not start")
+    # 2. Replace the characters that match `regex_pattern` by the `replace_value`. N.B Works but Slow.
+    df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
+
+    # 3. Removing runners did not start.
+    # 3.1 Runners that have a race_state == "Not Started" will be dropped.
+    print("** Removing Runners That did not start:")
     rows_count = len(df)
     df = df.drop(df.loc[df.race_state == "Not Started"].index).reset_index(drop=True)
+    # 3.2 Runners that do not have any split data will be dropped.
+    not_started_indices = df[
+        df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
+    ].index
+    df = df.drop(index=not_started_indices).reset_index(drop=True)
     print(
         f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
     )
 
-    # 3. Dropping runners that have a null value in these columns [age_cat, gender]
+    # 4. Dropping runners that have a null value in these columns [age_cat, gender].
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
-
-    # 4. Replace the characters that match `regex_pattern` by the `replace_value`. N.B Works but Slow.
-    df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
 
     # 5. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 6. Convert columns into best possible dtypes (dtypes are inferred).
-    df = df.convert_dtypes()
-
-    # 7. Converting dtype.
+    # 6. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
+
+    # 7. Convert columns into best possible dtypes (dtypes are inferred).
+    df = df.convert_dtypes()
 
     return df
 
@@ -81,7 +87,7 @@ def hamburg_cleaner(
     3. Remove runners that did not start the marathon `All the splits columns values are None`.
     4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender, last_split]`.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
-    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     7. Adding the `last_split` and `race_state` columns.
     8. Replacing `age_cat` and `last_split` values with the standard values.
     9. Reordering the DataFrame columns according to cols_order.
@@ -109,8 +115,6 @@ def hamburg_cleaner(
     # 4. Dropping runners that have a null value in these columns [age_cat, gender]
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
-
-    # TODO fill missing last_splits.
 
     # 5. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
@@ -164,7 +168,7 @@ def stockholm_cleaner(
     3. Remove runners that did not start the marathon `All the splits columns values are None`.
     4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender, last_split]`.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
-    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `float32`.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     7. Adding the `last_split` column and updating `race_state` column.
     8. Steps:
     + 8.1 Calculate the age based on the year of birth.
