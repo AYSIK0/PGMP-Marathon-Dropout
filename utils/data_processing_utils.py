@@ -452,3 +452,24 @@ def get_age_cat(age: int) -> str:
         return "80+"
     else:
         return age
+
+
+def valid_df(df: pd.DataFrame) -> bool:
+    """
+    ### Function to check if these columns `[age_cat, gender, race_state, last_split]` have the same length.
+    ----
+    ### Arguments:
+    + df: DataFrame to check.
+    ----
+    ### Returns `True` if they have the same length else `False`.
+    """
+    if (
+        df["age_cat"].count()
+        == df["gender"].count()
+        == df["race_state"].count()
+        == df["last_split"].count()
+    ):
+        return True
+    else:
+        print("The DataFrame is not valid !!! |-_-|")
+        return False
