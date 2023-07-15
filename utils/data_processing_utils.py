@@ -19,7 +19,7 @@ def london_cleaner(
     ### Returns a new DataFrame after applying the operations below.
     1. Columns in `cols_to_drop` are removed.
     2. Remove runners that did not start the marathon `race_stat = Not Started`
-    3. Dropping runners that do not have a non-null value in these columns `[age_cat, gender, last_split]`.
+    3. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
     4. Replacing `['-', ', -, {SPACE}]` with an empty character.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. Convert columns into best possible dtype using `convert_dtypes()`.
@@ -31,15 +31,16 @@ def london_cleaner(
         df.drop(cols_to_drop, axis=1, inplace=True)
 
     # 2. Removing runners did not start.
-    print("Removing Runners That did not start")
+    print("** Removing Runners That did not start")
     rows_count = len(df)
     df = df.drop(df.loc[df.race_state == "Not Started"].index).reset_index(drop=True)
     print(
         f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
     )
 
-    # 3. Dropping runners that have a null value in these columns [age_cat, gender, last_split]
-    df = drop_null_by_col(df, ["age_cat", "gender", "last_split"])
+    # 3. Dropping runners that have a null value in these columns [age_cat, gender]
+    print("** Dropping rows with null values in `age_cat` and `gender` columns:")
+    df = drop_null_by_col(df, ["age_cat", "gender"])
 
     # 4. Replace the characters that match `regex_pattern` by the `replace_value`. N.B Works but Slow.
     df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
@@ -95,7 +96,7 @@ def hamburg_cleaner(
     df = replace_value_in_cols(df)
 
     # 3. Removing runners did not start. (if all splits columns are null then the runner did not start.)
-    print("Removing Runners That did not start")
+    print("** Removing Runners That did not start")
     rows_count = len(df)
     not_started_indices = df[
         df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
@@ -106,7 +107,10 @@ def hamburg_cleaner(
     )
 
     # 4. Dropping runners that have a null value in these columns [age_cat, gender]
+    print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
+
+    # TODO fill missing last_splits.
 
     # 5. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
@@ -191,7 +195,7 @@ def stockholm_cleaner(
     )
 
     # 4. Dropping runners that have a null value in these columns [yob, gender]
-    print("Dropping rows with null values in `yob` and `gender` columns:")
+    print("** Dropping rows with null values in `yob` and `gender` columns:")
     df = drop_null_by_col(df, ["yob", "gender"])
 
     # 5. Converting time and pace into seconds.
