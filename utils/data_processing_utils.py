@@ -41,7 +41,7 @@ def london_cleaner(
     # 3. Dropping runners that do not have a non-null value in these columns [age_cat, gender, last_split]
     df = drop_null_by_col(df, ["age_cat", "gender", "last_split"])
 
-    # 4. Replace the characters in `to_replace` by the `replace_value`. N.B Works but Slow.
+    # 4. Replace the characters that match `regex_pattern` by the `replace_value`. N.B Works but Slow.
     df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
 
     # 5. Converting time and pace into seconds.
@@ -91,7 +91,7 @@ def hamburg_cleaner(
     if cols_to_drop and len(cols_to_drop) >= 1:
         df.drop(cols_to_drop, axis=1, inplace=True)
 
-    # 2. Replace the characters in `to_replace` by the `replace_value`. N.B Works but Slow.
+    # 2. Replace the characters match `regex_pattern` by the `replace_value`. N.B Works but Slow.
     df = replace_value_in_cols(df)
 
     # 3. Removing runners did not start. (if all splits columns are null then the runner did not start.)
