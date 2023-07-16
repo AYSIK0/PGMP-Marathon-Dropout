@@ -230,6 +230,7 @@ def stockholm_cleaner(
     # 8.4 the column named `yob` changed to `age_cat`.
     df.rename(columns={"yob": "age_cat"}, inplace=True)
     print("** column name `yob` changed to `age_cat`.")
+
     # 9. Replacing `last_split` values with the standard values.
     df["last_split"] = df["last_split"].replace(last_split_std)
 
@@ -237,6 +238,76 @@ def stockholm_cleaner(
     df = df[cols_order]
 
     # 11. Convert columns into best possible dtypes (dtypes are inferred).
+    df = df.convert_dtypes()
+
+    return df
+
+
+def boston_cleaner(
+    df: pd.DataFrame,
+    splits_keys: list[str],
+    cols_to_drop: list[str],
+    cols_order: list[str],
+) -> pd.DataFrame:
+    """
+    ### Function to clean Boston marathons' data.
+    #### `N.B` A copy of the original DataFrame is returned after all operations are performed.
+    ----
+    ### Arguments:
+    + df: DataFrame with data to convert.
+    + splits_keys: Name of split columns.
+    + cols_to_drop: Name of columns to remove from the DataFrame.
+    ----
+    ### Returns a new DataFrame after applying the operations below.
+    1. Columns in `cols_to_drop` are removed.
+    2. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    3. Remove runners that did not start the marathon `race_stat = Not Started` or `all splits' data is null`.
+    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
+    5. The time and pace for each split in `splits_keys` are converted into seconds.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    8. Reordering the DataFrame columns according to cols_order.
+    9. Convert columns into best possible dtype using `convert_dtypes()`.
+    """
+    df = df.copy()
+    # 1. Removing unused columns.
+    if cols_to_drop and len(cols_to_drop) >= 1:
+        df.drop(cols_to_drop, axis=1, inplace=True)
+
+    # 2. Replace the characters that match `regex_pattern` by the `replace_value`. N.B Works but Slow.
+    df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
+
+    # 3. Removing runners did not start.
+    # 3.1 Runners that have a race_state == "Not Started" will be dropped.
+    print("** Removing Runners That did not start:")
+    rows_count = len(df)
+    df = df.drop(df.loc[df.race_state == "not started"].index).reset_index(drop=True)
+    # 3.2 Runners that do not have any split data will be dropped.
+    not_started_indices = df[
+        df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
+    ].index
+    df = df.drop(index=not_started_indices).reset_index(drop=True)
+    print(
+        f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
+    )
+
+    # 4. Dropping runners that have a null value in these columns [age_cat, gender].
+    print("** Dropping rows with null values in `age_cat` and `gender` columns:")
+    df = drop_null_by_col(df, ["age_cat", "gender"])
+
+    # 5. Converting time and pace into seconds.
+    df = convert_to_sec(df, splits_keys)
+
+    # 6. Converting dtype.
+    df = convert_split_dtype(df, splits_keys)
+
+    # 7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    df = convert_pace_and_speed(df, splits_keys)
+
+    # 8. Reordering the DataFrame columns.
+    df = df[cols_order]
+
+    # 9. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
