@@ -473,3 +473,43 @@ def valid_df(df: pd.DataFrame) -> bool:
     else:
         print("The DataFrame is not valid !!! |-_-|")
         return False
+
+
+def convert_pace(mile_pace: int | float) -> np.float64:
+    """
+    ### Function to convert the pace form sec/mile to sec/km.
+    ----
+    ### Arguments:
+    + mile_pace: The pace in sec/mile.
+    ----
+    ### Returns: the pace in sec/km.
+    """
+    return np.round(mile_pace / 1.609)
+
+
+def convert_speed(mile_speed: float) -> np.float64:
+    """
+    ### Function to convert the speed form miles/h to km/h.
+    ----
+    ### Arguments:
+    + mile_pace: The speed in miles/h.
+    ----
+    ### Returns: the speed in km/h.
+    """
+    return np.round(mile_speed * 1.60934, decimals=2)
+
+
+def convert_pace_and_speed(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
+    """
+    ### Function to convert the splits' pace, and speed from sec/mile and miles/h to sec/km and km/h.
+    ----
+    ### Arguments:
+    + df: DataFrame with data to convert.
+    + splits_keys: Name of split columns.
+    ----
+    ### Returns the DataFrame.
+    """
+    for key in splits_keys:
+        df[f"{key}_pace"] = df[f"{key}_pace"].map(convert_pace, na_action="ignore")
+        df[f"{key}_speed"] = df[f"{key}_speed"].map(convert_speed, na_action="ignore")
+    return df
