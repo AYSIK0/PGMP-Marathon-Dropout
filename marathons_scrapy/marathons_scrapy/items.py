@@ -7,7 +7,10 @@ import scrapy
 
 
 class MarathonsScrapyItem(scrapy.Item):
-    # define the fields for your item here like:
+    """
+    ### Classes to handle the marathons' data.
+    """
+
     run_no: str = scrapy.Field()
     age_cat: str = scrapy.Field()
     gender: str = scrapy.Field()
@@ -17,7 +20,9 @@ class MarathonsScrapyItem(scrapy.Item):
 
 
 class MarathonsSplitItem(scrapy.Item):
-    """ """
+    """
+    ### Classes to handle the marathons' split data.
+    """
 
     race_state: str = scrapy.Field()
     last_split: str = scrapy.Field()
