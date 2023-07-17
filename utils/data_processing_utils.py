@@ -102,7 +102,7 @@ def hamburg_cleaner(
     df = replace_value_in_cols(df)
 
     # 3. Removing runners did not start. (if all splits columns are null then the runner did not start.)
-    print("** Removing Runners That did not start")
+    print("** Removing Runners That did not start:")
     rows_count = len(df)
     not_started_indices = df[
         df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
@@ -208,7 +208,7 @@ def stockholm_cleaner(
     # 6. Converting splits' time, pace, and speed dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 7. Adding the `last_split` and `race_state` columns.
+    # 7. Adding the `last_split` column and updating `race_state` column.
     df["last_split"] = df.iloc[:, df.columns.str.contains("time")].idxmax(axis=1)
     df["race_state"] = np.where(
         df["last_split"] == "k_finish_time", "Finished", "Started"
@@ -309,6 +309,103 @@ def boston_cleaner(
 
     # 9. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
+
+    return df
+
+
+def chicago_cleaner(
+    df: pd.DataFrame,
+    splits_keys: list[str],
+    cols_to_drop: list[str],
+    last_split_std: dict,
+    cols_order: list[str],
+) -> pd.DataFrame:
+    """
+    ### Function to clean Chicago marathons' data.
+    #### `N.B` A copy of the original DataFrame is returned after all operations are performed.
+    ----
+    ### Arguments:
+    + df: DataFrame with data to convert.
+    + splits_keys: Name of split columns.
+    + cols_to_drop: Name of columns to remove from the DataFrame.
+    + last_split_std: Dictionary of key value pair of old last_split column names `key` and the new ones `values`.
+    + cols_order: The order of the returned DataFrame columns, it's a list of columns' names arranged in the desired order.
+    ----
+    ### Returns a new DataFrame after applying the operations below.
+    1. Columns in `cols_to_drop` are removed.
+    2. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    3. Remove runners that did not start the marathon `All the splits columns values are None`.
+    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender, last_split]`.
+    5. The time and pace for each split in `splits_keys` are converted into seconds.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    7. Adding the `last_split` column and updating `race_state` column.
+    8. Replacing `last_split` values with the standard values.
+    9. Removing rows with invalid age categories, `[W-15, M-15, 19 and under]`.
+    10. Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
+    11. Convert columns into best possible dtype using `convert_dtypes()`.
+    12. Reordering the DataFrame columns according to cols_order.
+    """
+    df = df.copy()
+    # 1. Removing unused columns.
+    if cols_to_drop and len(cols_to_drop) >= 1:
+        df.drop(cols_to_drop, axis=1, inplace=True)
+
+    # 2. Replace the characters match `regex_pattern` by the `replace_value`. N.B Works but Slow.
+    df = replace_value_in_cols(df)
+
+    # 3. Removing runners did not start. (if all splits columns are null then the runner did not start.)
+    print("** Removing Runners That did not start:")
+    rows_count = len(df)
+    not_started_indices = df[
+        df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
+    ].index
+    df.drop(index=not_started_indices, inplace=True)
+    print(
+        f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
+    )
+
+    # 4. Dropping runners that have a null value in these columns [age_cat, gender]
+    print("** Dropping rows with null values in `age_cat` and `gender` columns:")
+    df = drop_null_by_col(df, ["age_cat", "gender"])
+
+    # 5. Converting time and pace into seconds.
+    df = convert_to_sec(df, splits_keys)
+
+    # 6. Converting splits' time, pace, and speed dtype.
+    df = convert_split_dtype(df, splits_keys)
+
+    # 7. Adding the `last_split` column and updating `race_state` column.
+    df["last_split"] = df.iloc[:, df.columns.str.contains("time")].idxmax(axis=1)
+    df["race_state"] = np.where(
+        df["last_split"] == "k_finish_time", "Finished", "Started"
+    )
+
+    # 8. Replacing `last_split` values with the standard values.
+    df["last_split"] = df["last_split"].replace(last_split_std)
+
+    # 9. Removing rows with invalid age categories.
+    print("** Dropping rows with invalid age categories [W-15, M-15, 19 and under]:")
+    invalid_age_cat_indices = df[
+        df["age_cat"].isin({"W-15", "M-15", "19 and under"})
+    ].index
+    org_count = len(df)
+    df = df.drop(invalid_age_cat_indices).reset_index(drop=True)
+    dropped_count = org_count - len(df)
+    print(
+        f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows: {dropped_count}"
+    )
+
+    # 10. Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
+    print(
+        "** Replacing these age categories '20-24', '25-29', '30-34', and '35-39' by '18-39'"
+    )
+    df["age_cat"].replace(["20-24", "25-29", "30-34", "35-39"], "18-39", inplace=True)
+
+    # 11. Reordering the DataFrame columns.
+    df = df.convert_dtypes()
+
+    # 12. Convert columns into best possible dtypes (dtypes are inferred).
+    df = df[cols_order]
 
     return df
 
