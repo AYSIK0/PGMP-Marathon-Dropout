@@ -547,7 +547,7 @@ def get_ham_age_cat_dict(df: pd.DataFrame) -> dict:
     # Replacing the age range with the age_cat standard values.
     for key, value in age_cat_dict.items():
         match value:
-            case " " | "20" | "U20" | "30" | "35":
+            case " " | "20" | "U20" | "30" | "35" | "JA":
                 age_cat_dict[key] = "18-39"
             case "40":
                 age_cat_dict[key] = "40-44"
