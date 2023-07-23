@@ -257,11 +257,12 @@ def boston_cleaner(
     + df: DataFrame with data to convert.
     + splits_keys: Name of split columns.
     + cols_to_drop: Name of columns to remove from the DataFrame.
+    + cols_order: The order of the columns in the DataFrame, it's a list of columns' names arranged in the desired order.
     ----
     ### Returns a new DataFrame after applying the operations below.
     1. Columns in `cols_to_drop` are removed.
     2. Replacing `['-', ', -, {SPACE}]` with an empty character.
-    3. Remove runners that did not start the marathon `race_stat = Not Started` or `all splits' data is null`.
+    3. Remove runners that did not start the marathon `race_stat = not started` or `all splits' data is null`.
     4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
@@ -446,6 +447,7 @@ def convert_to_sec(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
 def convert_split_dtype(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
     """
     ### Function to convert the splits' time, pace, and speed dtype.
+    #### N.B The function only check split columns, their name start with `k_`.
     ----
     ### Arguments:
     + df: DataFrame with data to convert.
@@ -465,6 +467,7 @@ def convert_split_dtype(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFram
 def save_df(df: pd.DataFrame, file_path: str) -> None:
     """
     ### Function to save Pandas DataFrame, `file_path` should contain the full path where to save the DataFrame and the file name with `csv` extension.
+    ####  N.B The function will create the path if it does not exist.
     ----
     ### Arguments:
     + df: DataFrame to save.
