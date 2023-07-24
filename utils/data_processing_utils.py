@@ -411,6 +411,131 @@ def chicago_cleaner(
     return df
 
 
+def houston_cleaner(
+    df: pd.DataFrame,
+    splits_keys: list[str],
+    cols_to_drop: list[str],
+    last_split_std: dict,
+    cols_order: list[str],
+) -> pd.DataFrame:
+    """
+    ### Function to clean Houston marathons' data.
+    #### `N.B` A copy of the original DataFrame is returned after all operations are performed.
+    ----
+    ### Arguments:
+    + df: DataFrame with data to convert.
+    + splits_keys: Name of split columns.
+    + cols_to_drop: Name of columns to remove from the DataFrame.
+    + last_split_std: Standard name for the last split column.
+    + cols_order: The order of the columns in the DataFrame.
+    ----
+    ### Returns a new DataFrame after applying the operations below.
+    1. Columns in `cols_to_drop` are removed.
+    2. Replacing `['-', ', -, {SPACE}]` with an empty character.
+    3. Remove runners that did not start the marathon, `all splits' data is null`.
+    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
+    5. The time and pace for each split in `splits_keys` are converted into seconds.
+    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    8. cleaning age_cat column.
+    + 8.1 Removing rows with invalid age categories `[12-15, 16-19, Elites]`.
+    + 8.2 Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
+    9. Cleaning race_state column.
+    + 9.1 Removing rows with invalid race state. `['Other', 'DQ - No Reason Was Given']`
+    + 9.2 Replacing race_state values with the "Started" for runners that started the marathon but did not finish.
+    10. Adding last_split column.
+    + 10.1 Getting the last_split column values based on the max value in the splits columns.
+    + 10.2 Replacing the last_split column values with the standard values.
+    11. Reordering the DataFrame columns according to cols_order.
+    12. Convert columns into best possible dtype using `convert_dtypes()`.
+    """
+    df = df.copy()
+    # 1. Removing unused columns.
+    if cols_to_drop and len(cols_to_drop) >= 1:
+        df.drop(cols_to_drop, axis=1, inplace=True)
+
+    # 2. Replace the characters that match `regex_pattern` by the `replace_value`. N.B Works but Slow.
+    df = replace_value_in_cols(df, regex_pattern="('-'|'+|-| )")
+
+    # 3. Removing runners did not start.
+    # 3.1 Runners that have a race_state == "Not Started" will be dropped.
+    print("** Removing Runners That did not start:")
+    rows_count = len(df)
+    # df = df.drop(df.loc[df.race_state == "not started"].index).reset_index(drop=True)
+    # 3.2 Runners that do not have any split data will be dropped.
+    not_started_indices = df[
+        df.iloc[:, df.columns.str.startswith("k_")].isna().values.all(axis=1)
+    ].index
+    df = df.drop(index=not_started_indices).reset_index(drop=True)
+    print(
+        f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
+    )
+
+    # 4. Dropping runners that have a null value in these columns [age_cat, gender].
+    print("** Dropping rows with null values in `age_cat` and `gender` columns:")
+    df = drop_null_by_col(df, ["age_cat", "gender"])
+
+    # 5. Converting time and pace into seconds.
+    df = convert_to_sec(df, splits_keys)
+
+    # 6. Converting dtype.
+    df = convert_split_dtype(df, splits_keys)
+
+    # 7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    df = convert_pace_and_speed(df, splits_keys)
+
+    # 8 Cleaning age_cat column.
+    # 8.1 Removing rows with invalid age categories.
+    print("** Dropping rows with invalid age categories [12-15, 16-19, Elites]:")
+    invalid_age_cat_indices = df[df["age_cat"].isin({"12-15", "16-19", "Elites"})].index
+    org_count = len(df)
+    df = df.drop(invalid_age_cat_indices).reset_index(drop=True)
+    dropped_count = org_count - len(df)
+    print(
+        f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows: {dropped_count}"
+    )
+    # 8.2. Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
+    print(
+        "** Replacing these age categories '20-24', '25-29', '30-34', and '35-39' by '18-39'"
+    )
+    df["age_cat"].replace(["20-24", "25-29", "30-34", "35-39"], "18-39", inplace=True)
+
+    # 9. Cleaning race_state column.
+    # 9.1 Removing rows with invalid race state.
+    print(
+        "** Dropping rows with invalid race state ['Other', 'DQ - No Reason Was Given']:"
+    )
+    invalid_race_state_indices = df[
+        df["race_state"].isin({"Other", "DQ - No Reason Was Given"})
+    ].index
+    org_count = len(df)
+    df = df.drop(invalid_race_state_indices).reset_index(drop=True)
+    dropped_count = org_count - len(df)
+    print(
+        f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows: {dropped_count}"
+    )
+    # 9.2 Replacing race_state values with the "Started" for runners that started the marathon but did not finish.
+    df["race_state"].replace(
+        ["DNF", "DQ - Over 6h", "DQ - missing split", "DQ - SWITCH from HALF to MARA"],
+        "Started",
+        inplace=True,
+    )
+
+    # 10. Adding last_split column.
+    # 10.1 Getting the last_split column values based on the max value in the splits columns.
+    df["last_split"] = df.iloc[:, df.columns.str.contains("time")].idxmax(axis=1)
+    # 10.2 Replacing the last_split column values with the standard values.
+    df["last_split"] = df["last_split"].replace(last_split_std)
+
+    # 11. Reordering the DataFrame columns.
+    df = df[cols_order]
+
+    # 12. Convert columns into best possible dtypes (dtypes are inferred).
+    df = df.convert_dtypes()
+
+    return df
+
+
 def convert_to_sec(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataFrame:
     """
     ### Function to convert the splits' time and pace to their total seconds.
