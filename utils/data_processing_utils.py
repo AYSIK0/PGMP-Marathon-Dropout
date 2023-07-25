@@ -760,12 +760,8 @@ def get_age_cat(age: int) -> str:
         return "60-64"
     elif 65 <= age <= 69:
         return "65-69"
-    elif 70 <= age <= 74:
-        return "70-74"
-    elif 75 <= age <= 79:
-        return "75-79"
-    elif age >= 80:
-        return "80+"
+    elif age >= 70:
+        return "70+"
     else:
         return age
 
