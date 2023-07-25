@@ -669,13 +669,13 @@ def replace_value_in_cols(
 
 def get_ham_age_cat_dict(df: pd.DataFrame) -> dict:
     """
-    ### Function to get the age_cat translation dictionary.
+    ### Function to get the age_cat translation dictionary for hamburg marathon.
     ----
     ### Arguments:
     + df: The DataFrame.
     ----
     ### Returns a dictionary with the values of `age_cat` as `key` and a value from this list
-    `['18-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70-74', '75-79', '80+']` as the `value` pair.
+    `['18-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70+']` as the `value` pair.
     """
     age_cat_dict = {}
     # Extracting the age range form the age_cat.
@@ -702,13 +702,9 @@ def get_ham_age_cat_dict(df: pd.DataFrame) -> dict:
             case "60":
                 age_cat_dict[key] = "60-64"
             case "65":
-                age_cat_dict[key] = "65-59"
-            case "70":
-                age_cat_dict[key] = "70-74"
-            case "75":
-                age_cat_dict[key] = "75-79"
-            case "80" | "85":
-                age_cat_dict[key] = "80+"
+                age_cat_dict[key] = "65-69"
+            case "70" | "75" | "80" | "85":
+                age_cat_dict[key] = "70+"
             case _:
                 age_cat_dict[key] = value
     return age_cat_dict
@@ -778,16 +774,16 @@ def valid_df(df: pd.DataFrame) -> bool:
     ----
     ### Returns `True` if the DataFrame is valid else `False`.
     """
-    assert df["age_cat"].unique() == [
+    assert set(df["age_cat"].unique().tolist()) == {
         "18-39",
         "40-44",
-        "50-54",
         "45-49",
+        "50-54",
         "55-59",
         "60-64",
         "65-69",
         "70+",
-    ]
+    }, f"The `age_cat` column must only have these values ['18-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70+'], found: {df['age_cat'].unique().tolist()}"
     if (
         df["age_cat"].count()
         == df["gender"].count()
