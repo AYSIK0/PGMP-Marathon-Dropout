@@ -364,7 +364,9 @@ def chicago_cleaner(
     7. Adding the `last_split` column and updating `race_state` column.
     8. Replacing `last_split` values with the standard values.
     9. Removing rows with invalid age categories, `[W-15, M-15, 19 and under]`.
-    10. Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
+    10.
+    + 10.1 Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
+    + 10.2 Replacing '70-74', '75-79', '80+'  by '70+'.
     11. Convert columns into best possible dtype using `convert_dtypes()`.
     12. Reordering the DataFrame columns according to cols_order.
     """
@@ -418,11 +420,15 @@ def chicago_cleaner(
         f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows: {dropped_count}"
     )
 
-    # 10. Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
+    # 10.
+    # 10.1 Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
     print(
         "** Replacing these age categories '20-24', '25-29', '30-34', and '35-39' by '18-39'"
     )
     df["age_cat"].replace(["20-24", "25-29", "30-34", "35-39"], "18-39", inplace=True)
+    # 10.2 Replacing '70-74', '75-79', '80+'  by '70+'.
+    print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
+    df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
 
     # 11. Reordering the DataFrame columns.
     df = df.convert_dtypes()
