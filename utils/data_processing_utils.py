@@ -5,7 +5,10 @@ import re
 
 
 def london_cleaner(
-    df: pd.DataFrame, splits_keys: list[str], cols_to_drop: list[str]
+    df: pd.DataFrame,
+    splits_keys: list[str],
+    cols_to_drop: list[str],
+    cols_order: list[str],
 ) -> pd.DataFrame:
     """
     ### Function to clean London marathons' data.
@@ -15,6 +18,7 @@ def london_cleaner(
     + df: DataFrame with data to convert.
     + splits_keys: Name of split columns.
     + cols_to_drop: Name of columns to remove from the DataFrame.
+    + cols_order: The order of the returned DataFrame columns, it's a list of columns' names arranged in the desired order.
     ----
     ### Returns a new DataFrame after applying the operations below.
     1. Columns in `cols_to_drop` are removed.
@@ -23,7 +27,9 @@ def london_cleaner(
     4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
-    7. Convert columns into best possible dtype using `convert_dtypes()`.
+
+    8. Reordering the DataFrame columns according to cols_order.
+    x. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -57,7 +63,18 @@ def london_cleaner(
     # 6. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 7. Convert columns into best possible dtypes (dtypes are inferred).
+    # 7. Replacing `age_cat` values with the standard values.
+    print(
+        "** Replacing these age categories '70-74', '75-79', '80-84', '80+', '85+' by '70+'"
+    )
+    df["age_cat"].replace(
+        ["70-74", "75-79", "80-84", "80+", "85+"], "70+", inplace=True
+    )
+
+    # 8. Reordering the DataFrame columns.
+    df = df[cols_order]
+
+    # 9. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
@@ -752,13 +769,25 @@ def get_age_cat(age: int) -> str:
 
 def valid_df(df: pd.DataFrame) -> bool:
     """
-    ### Function to check if these columns `[age_cat, gender, race_state, last_split]` have the same length.
+    ### Function to check if the DataFrame is valid.
+    + These columns `[age_cat, gender, race_state, last_split]` must have the same length.
+    + The `age_cat` column must only have these values `['18-39', '40-44', '45-49', '50-54', '55-59', '60-64', '65-69', '70+']`.
     ----
     ### Arguments:
     + df: DataFrame to check.
     ----
-    ### Returns `True` if they have the same length else `False`.
+    ### Returns `True` if the DataFrame is valid else `False`.
     """
+    assert df["age_cat"].unique() == [
+        "18-39",
+        "40-44",
+        "50-54",
+        "45-49",
+        "55-59",
+        "60-64",
+        "65-69",
+        "70+",
+    ]
     if (
         df["age_cat"].count()
         == df["gender"].count()
