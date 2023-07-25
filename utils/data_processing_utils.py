@@ -284,8 +284,9 @@ def boston_cleaner(
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
-    8. Reordering the DataFrame columns according to cols_order.
-    9. Convert columns into best possible dtype using `convert_dtypes()`.
+    8. Replacing `'70-74', '75-79', '80+'  by '70+'`.
+    9. Reordering the DataFrame columns according to cols_order.
+    10. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -322,10 +323,14 @@ def boston_cleaner(
     # 7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
     df = convert_pace_and_speed(df, splits_keys)
 
-    # 8. Reordering the DataFrame columns.
+    # 8. Replacing '70-74', '75-79', '80+'  by '70+'.
+    print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
+    df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
+
+    # 9. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 9. Convert columns into best possible dtypes (dtypes are inferred).
+    # 10. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
