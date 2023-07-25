@@ -27,9 +27,9 @@ def london_cleaner(
     4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
-
+    7. Replacing these age categories `'70-74', '75-79', '80-84', '80+', '85+' by '70+'`
     8. Reordering the DataFrame columns according to cols_order.
-    x. Convert columns into best possible dtype using `convert_dtypes()`.
+    9. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -63,7 +63,7 @@ def london_cleaner(
     # 6. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 7. Replacing `age_cat` values with the standard values.
+    # 7. Replacing these age categories '70-74', '75-79', '80-84', '80+', '85+' by '70+'
     print(
         "** Replacing these age categories '70-74', '75-79', '80-84', '80+', '85+' by '70+'"
     )
@@ -456,7 +456,8 @@ def houston_cleaner(
     7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
     8. cleaning age_cat column.
     + 8.1 Removing rows with invalid age categories `[12-15, 16-19, Elites]`.
-    + 8.2 Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
+    + 8.2 Replacing `'20-24', '25-29', '30-34', and '35-39' by '18-39'` to adhere to the standard age categories.
+    + 8.3 Replacing these age categories `'70-74', '75-79', '80+' by '70+'`.
     9. Cleaning race_state column.
     + 9.1 Removing rows with invalid race state. `['Other', 'DQ - No Reason Was Given']`
     + 9.2 Replacing race_state values with the "Started" for runners that started the marathon but did not finish.
@@ -517,13 +518,19 @@ def houston_cleaner(
     )
     df["age_cat"].replace(["20-24", "25-29", "30-34", "35-39"], "18-39", inplace=True)
 
+    # 8.3. Replacing these age categories '70-74', '75-79', '80+' by '70+'
+    print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
+    df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
+
     # 9. Cleaning race_state column.
     # 9.1 Removing rows with invalid race state.
     print(
-        "** Dropping rows with invalid race state ['Other', 'DQ - No Reason Was Given']:"
+        "** Dropping rows with invalid race state ['Other', 'DQ - No Reason Was Given', 'DQ - SWITCH from HALF to MARA']:"
     )
     invalid_race_state_indices = df[
-        df["race_state"].isin({"Other", "DQ - No Reason Was Given"})
+        df["race_state"].isin(
+            {"Other", "DQ - No Reason Was Given", "DQ - SWITCH from HALF to MARA"}
+        )
     ].index
     org_count = len(df)
     df = df.drop(invalid_race_state_indices).reset_index(drop=True)
@@ -533,7 +540,7 @@ def houston_cleaner(
     )
     # 9.2 Replacing race_state values with the "Started" for runners that started the marathon but did not finish.
     df["race_state"].replace(
-        ["DNF", "DQ - Over 6h", "DQ - missing split", "DQ - SWITCH from HALF to MARA"],
+        ["DNF", "DQ - Over 6h", "DQ - missing split"],
         "Started",
         inplace=True,
     )
