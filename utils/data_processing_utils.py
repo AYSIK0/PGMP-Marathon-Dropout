@@ -480,11 +480,12 @@ def houston_cleaner(
     9. Cleaning race_state column.
     + 9.1 Removing rows with invalid race state. `['Other', 'DQ - No Reason Was Given']`
     + 9.2 Replacing race_state values with the "Started" for runners that started the marathon but did not finish.
-    10. Adding last_split column.
-    + 10.1 Getting the last_split column values based on the max value in the splits columns.
-    + 10.2 Replacing the last_split column values with the standard values.
-    11. Reordering the DataFrame columns according to cols_order.
-    12. Convert columns into best possible dtype using `convert_dtypes()`.
+    10. Dropping rows with splits that only contain time.
+    11. Adding last_split column.
+    + 11.1 Getting the last_split column values based on the max value in the splits columns.
+    + 11.2 Replacing the last_split column values with the standard values.
+    12. Reordering the DataFrame columns according to cols_order.
+    13. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -564,16 +565,19 @@ def houston_cleaner(
         inplace=True,
     )
 
-    # 10. Adding last_split column.
-    # 10.1 Getting the last_split column values based on the max value in the splits columns.
+    # 10. Dropping rows with splits that only contain time. (N.B 20k split is skipped since Houston did not provide it.)
+    df = drop_rows_with_time_only_splits(df, splits_keys, skip_splits=["k_20"])
+
+    # 11. Adding last_split column.
+    # 11.1 Getting the last_split column values based on the max value in the splits columns.
     df["last_split"] = df.iloc[:, df.columns.str.contains("time")].idxmax(axis=1)
-    # 10.2 Replacing the last_split column values with the standard values.
+    # 11.2 Replacing the last_split column values with the standard values.
     df["last_split"] = df["last_split"].replace(last_split_std)
 
-    # 11. Reordering the DataFrame columns.
+    # 12. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 12. Convert columns into best possible dtypes (dtypes are inferred).
+    # 13. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
