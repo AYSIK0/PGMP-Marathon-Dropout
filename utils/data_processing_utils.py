@@ -110,9 +110,10 @@ def hamburg_cleaner(
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     7. Adding the `last_split` and `race_state` columns.
-    8. Replacing `age_cat` and `last_split` values with the standard values.
-    9. Reordering the DataFrame columns according to cols_order.
-    10. Convert columns into best possible dtype using `convert_dtypes()`.
+    8. Dropping rows with splits that only contain time.
+    9. Replacing `age_cat` and `last_split` values with the standard values.
+    10. Reordering the DataFrame columns according to cols_order.
+    11. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -149,15 +150,18 @@ def hamburg_cleaner(
         df["last_split"] == "k_finish_time", "Finished", "Started"
     )
 
-    # 8. Replacing `age_cat` and `last_split` values with the standard values.
+    # 8. Dropping rows with splits that only contain time.
+    df = drop_rows_with_time_only_splits(df, splits_keys)
+
+    # 9. Replacing `age_cat` and `last_split` values with the standard values.
     age_cat_std = get_ham_age_cat_dict(df)
     df["age_cat"] = df["age_cat"].replace(age_cat_std)
     df["last_split"] = df["last_split"].replace(last_split_std)
 
-    # 9. Reordering the DataFrame columns.
+    # 10. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 10. Convert columns into best possible dtypes (dtypes are inferred).
+    # 11. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
