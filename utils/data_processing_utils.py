@@ -239,6 +239,9 @@ def stockholm_cleaner(
         df["last_split"] == "k_finish_time", "Finished", "Started"
     )
 
+    # 8x. Dropping rows with splits that only contain time.
+    df = drop_rows_with_time_only_splits(df, splits_keys)
+
     # 8.
     # 8.1 Calculate the age based on the year of birth.
     df["yob"] = df["yob"].apply(calc_age, args=(year,))
