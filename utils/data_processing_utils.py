@@ -55,17 +55,7 @@ def london_cleaner(
     )
 
     # 4. Dropping rows with splits that only contain time.
-    miss_indices = get_indices_of_rows_with_only_time(df, splits_keys)
-    finished_count = df.loc[
-        (df.index.isin(miss_indices)) & (df["race_state"] == "Finished")
-    ].shape[0]
-    started_count = df.loc[
-        (df.index.isin(miss_indices)) & (df["race_state"] == "Started")
-    ].shape[0]
-    print(
-        f"** Dropping rows with splits that only contain time: Finished: {finished_count} || Started: {started_count}"
-    )
-    df = df.drop(index=miss_indices).reset_index(drop=True)
+    df = drop_rows_with_time_only_splits(df, splits_keys)
 
     # 5. Dropping runners that have a null value in these columns [age_cat, gender].
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
@@ -898,3 +888,37 @@ def get_indices_of_rows_with_only_time(
     if return_indices_list:
         return list({index for indices in split_dict.values() for index in indices})
     return split_dict
+
+
+def drop_rows_with_time_only_splits(
+    df: pd.DataFrame,
+    splits_names: list[str],
+    skip_splits: list[str] = None,
+    return_indices_list: list[int] = True,
+) -> pd.DataFrame:
+    """
+    ### Returns the DataFrame after dropping the rows that have time only in the splits columns.
+    ----
+    Arguments:
+    + df: The DataFrame to be used.
+    + splits_names: The names of the splits columns.
+    + skip_splits: The names of the splits columns to skip.
+    + return_indices_list: If True the function will return a list of indices else it will return a dictionary of indices.
+    ----
+    Returns:
+    + The DataFrame after dropping the rows that have time only in the splits columns.
+    """
+    miss_indices = get_indices_of_rows_with_only_time(
+        df, splits_names, skip_splits, return_indices_list
+    )
+    finished_count = df.loc[
+        (df.index.isin(miss_indices)) & (df["race_state"] == "Finished")
+    ].shape[0]
+    started_count = df.loc[
+        (df.index.isin(miss_indices)) & (df["race_state"] == "Started")
+    ].shape[0]
+    print(
+        f"** Dropping rows with splits that only contain time: Finished: {finished_count} || Started: {started_count}"
+    )
+    df = df.drop(index=miss_indices).reset_index(drop=True)
+    return df
