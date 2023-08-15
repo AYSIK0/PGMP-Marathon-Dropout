@@ -24,12 +24,13 @@ def london_cleaner(
     1. Columns in `cols_to_drop` are removed.
     2. Replacing `['-', ', -, {SPACE}]` with an empty character.
     3. Remove runners that did not start the marathon `race_stat = Not Started` or `all splits' data is null`.
-    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
-    5. The time and pace for each split in `splits_keys` are converted into seconds.
-    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
-    7. Replacing these age categories `'70-74', '75-79', '80-84', '80+', '85+' by '70+'`
-    8. Reordering the DataFrame columns according to cols_order.
-    9. Convert columns into best possible dtype using `convert_dtypes()`.
+    4. Dropping rows with splits that only contain time.
+    5. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
+    6. The time and pace for each split in `splits_keys` are converted into seconds.
+    7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    8. Replacing these age categories `'70-74', '75-79', '80-84', '80+', '85+' by '70+'`
+    9. Reordering the DataFrame columns according to cols_order.
+    10. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -53,17 +54,30 @@ def london_cleaner(
         f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
     )
 
-    # 4. Dropping runners that have a null value in these columns [age_cat, gender].
+    # 4. Dropping rows with splits that only contain time.
+    miss_indices = get_indices_of_rows_with_only_time(df, splits_keys)
+    finished_count = df.loc[
+        (df.index.isin(miss_indices)) & (df["race_state"] == "Finished")
+    ].shape[0]
+    started_count = df.loc[
+        (df.index.isin(miss_indices)) & (df["race_state"] == "Started")
+    ].shape[0]
+    print(
+        f"** Dropping rows with splits that only contain time: Finished: {finished_count} || Started: {started_count}"
+    )
+    df = df.drop(index=miss_indices).reset_index(drop=True)
+
+    # 5. Dropping runners that have a null value in these columns [age_cat, gender].
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
 
-    # 5. Converting time and pace into seconds.
+    # 6. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 6. Converting dtype.
+    # 7. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 7. Replacing these age categories '70-74', '75-79', '80-84', '80+', '85+' by '70+'
+    # 8. Replacing these age categories '70-74', '75-79', '80-84', '80+', '85+' by '70+'
     print(
         "** Replacing these age categories '70-74', '75-79', '80-84', '80+', '85+' by '70+'"
     )
@@ -71,10 +85,10 @@ def london_cleaner(
         ["70-74", "75-79", "80-84", "80+", "85+"], "70+", inplace=True
     )
 
-    # 8. Reordering the DataFrame columns.
+    # 9. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 9. Convert columns into best possible dtypes (dtypes are inferred).
+    # 10. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
@@ -848,3 +862,39 @@ def convert_pace_and_speed(df: pd.DataFrame, splits_keys: list[str]) -> pd.DataF
         df[f"{key}_pace"] = df[f"{key}_pace"].map(convert_pace, na_action="ignore")
         df[f"{key}_speed"] = df[f"{key}_speed"].map(convert_speed, na_action="ignore")
     return df
+
+
+def get_indices_of_rows_with_only_time(
+    df: pd.DataFrame,
+    splits_names: list[str],
+    skip_splits: list[str] = None,
+    return_indices_list: list[int] = True,
+) -> dict[str, pd.Index]:
+    """
+    ### Returns the indices of rows that have time.
+    ----
+    Arguments:
+    + df: The DataFrame to be used.
+    + splits_names: The names of the splits columns.
+    + skip_splits: The names of the splits columns to skip.
+    + return_indices_list: If True the function will return a list of indices else it will return a dictionary of indices.
+    ----
+    Returns:
+    + If `return_indices_list` is True the function will return a list of indices.
+    + If `return_indices_list` is False the function will return a dictionary of indices.
+    """
+    # Turning the `skip_splits` list into a set.
+    skip_splits = set(skip_splits) if skip_splits else set()
+    split_dict = {}
+    # Getting the indices of rows that have time.
+    for split in splits_names:
+        if split in skip_splits:
+            continue
+        split_dict[split] = df[
+            df[f"{split}_time"].notnull()
+            & df[f"{split}_pace"].isnull()
+            & df[f"{split}_speed"].isnull()
+        ].index
+    if return_indices_list:
+        return list({index for indices in split_dict.values() for index in indices})
+    return split_dict
