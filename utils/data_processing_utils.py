@@ -378,13 +378,14 @@ def chicago_cleaner(
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     7. Adding the `last_split` column and updating `race_state` column.
-    8. Replacing `last_split` values with the standard values.
-    9. Removing rows with invalid age categories, `[W-15, M-15, 19 and under]`.
-    10.
-    + 10.1 Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
-    + 10.2 Replacing '70-74', '75-79', '80+'  by '70+'.
-    11. Convert columns into best possible dtype using `convert_dtypes()`.
-    12. Reordering the DataFrame columns according to cols_order.
+    8. Dropping rows with splits that only contain time.
+    9. Replacing `last_split` values with the standard values.
+    10. Removing rows with invalid age categories, `[W-15, M-15, 19 and under]`.
+    11.
+    + 11.1 Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
+    + 11.2 Replacing '70-74', '75-79', '80+'  by '70+'.
+    12. Convert columns into best possible dtype using `convert_dtypes()`.
+    13. Reordering the DataFrame columns according to cols_order.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -421,10 +422,13 @@ def chicago_cleaner(
         df["last_split"] == "k_finish_time", "Finished", "Started"
     )
 
-    # 8. Replacing `last_split` values with the standard values.
+    # 8. Dropping rows with splits that only contain time.
+    df = drop_rows_with_time_only_splits(df, splits_keys)
+
+    # 9. Replacing `last_split` values with the standard values.
     df["last_split"] = df["last_split"].replace(last_split_std)
 
-    # 9. Removing rows with invalid age categories.
+    # 10. Removing rows with invalid age categories.
     print("** Dropping rows with invalid age categories [W-15, M-15, 19 and under]:")
     invalid_age_cat_indices = df[
         df["age_cat"].isin({"W-15", "M-15", "19 and under"})
@@ -436,20 +440,20 @@ def chicago_cleaner(
         f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows: {dropped_count}"
     )
 
-    # 10.
-    # 10.1 Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
+    # 11.
+    # 11.1 Replacing '20-24', '25-29', '30-34', and '35-39' by '18-39' to adhere to the standard age categories.
     print(
         "** Replacing these age categories '20-24', '25-29', '30-34', and '35-39' by '18-39'"
     )
     df["age_cat"].replace(["20-24", "25-29", "30-34", "35-39"], "18-39", inplace=True)
-    # 10.2 Replacing '70-74', '75-79', '80+'  by '70+'.
+    # 11.2 Replacing '70-74', '75-79', '80+'  by '70+'.
     print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
     df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
 
-    # 11. Reordering the DataFrame columns.
+    # 12. Reordering the DataFrame columns.
     df = df.convert_dtypes()
 
-    # 12. Convert columns into best possible dtypes (dtypes are inferred).
+    # 13. Convert columns into best possible dtypes (dtypes are inferred).
     df = df[cols_order]
 
     return df
