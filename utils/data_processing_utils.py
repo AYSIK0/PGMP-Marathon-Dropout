@@ -195,14 +195,15 @@ def stockholm_cleaner(
     5. The time and pace for each split in `splits_keys` are converted into seconds.
     6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     7. Adding the `last_split` column and updating `race_state` column.
-    8. Steps:
-    + 8.1 Calculate the age based on the year of birth.
-    + 8.2 Dropping any non-adult runner age < 18.
-    + 8.3 Get the appropriate age category.
-    + 8.4 the column named `yob` changed to `age_cat`.
-    9. Replacing `last_split` values with the standard values.
-    10. Reordering the DataFrame columns according to cols_order.
-    11. Convert columns into best possible dtype using `convert_dtypes()`.
+    8. Dropping rows with splits that only contain time.
+    9. Steps:
+    + 9.1 Calculate the age based on the year of birth.
+    + 9.2 Dropping any non-adult runner age < 18.
+    + 9.3 Get the appropriate age category.
+    + 9.4 the column named `yob` changed to `age_cat`.
+    10. Replacing `last_split` values with the standard values.
+    11. Reordering the DataFrame columns according to cols_order.
+    12. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -239,13 +240,13 @@ def stockholm_cleaner(
         df["last_split"] == "k_finish_time", "Finished", "Started"
     )
 
-    # 8x. Dropping rows with splits that only contain time.
+    # 8. Dropping rows with splits that only contain time.
     df = drop_rows_with_time_only_splits(df, splits_keys)
 
-    # 8.
-    # 8.1 Calculate the age based on the year of birth.
+    # 9.
+    # 9.1 Calculate the age based on the year of birth.
     df["yob"] = df["yob"].apply(calc_age, args=(year,))
-    # 8.2 Dropping any non-adult runner age < 18.
+    # 9.2 Dropping any non-adult runner age < 18.
     print("** Dropping non-adult runners (age < 18):")
     org_count = len(df)
     df.drop(df[df["yob"] < 18].index, inplace=True)
@@ -253,19 +254,19 @@ def stockholm_cleaner(
     print(
         f"Original rows count: {org_count} || New rows count: {len(df)} || Dropped rows: {dropped_count}"
     )
-    # 8.3 Get the appropriate age category.
+    # 9.3 Get the appropriate age category.
     df["yob"] = df["yob"].apply(get_age_cat)
-    # 8.4 the column named `yob` changed to `age_cat`.
+    # 9.4 the column named `yob` changed to `age_cat`.
     df.rename(columns={"yob": "age_cat"}, inplace=True)
     print("** column name `yob` changed to `age_cat`.")
 
-    # 9. Replacing `last_split` values with the standard values.
+    # 10. Replacing `last_split` values with the standard values.
     df["last_split"] = df["last_split"].replace(last_split_std)
 
-    # 10. Reordering the DataFrame columns.
+    # 11. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 11. Convert columns into best possible dtypes (dtypes are inferred).
+    # 12. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
@@ -291,13 +292,14 @@ def boston_cleaner(
     1. Columns in `cols_to_drop` are removed.
     2. Replacing `['-', ', -, {SPACE}]` with an empty character.
     3. Remove runners that did not start the marathon `race_stat = not started` or `all splits' data is null`.
-    4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
-    5. The time and pace for each split in `splits_keys` are converted into seconds.
-    6. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
-    7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
-    8. Replacing `'70-74', '75-79', '80+'  by '70+'`.
-    9. Reordering the DataFrame columns according to cols_order.
-    10. Convert columns into best possible dtype using `convert_dtypes()`.
+    4. Dropping rows with splits that only contain time.
+    5. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
+    6. The time and pace for each split in `splits_keys` are converted into seconds.
+    7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    8. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    9. Replacing `'70-74', '75-79', '80+'  by '70+'`.
+    10. Reordering the DataFrame columns according to cols_order.
+    11. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -321,27 +323,30 @@ def boston_cleaner(
         f"Original rows count: {rows_count} || New rows count: {len(df)} || Dropped Rows: {rows_count - len(df)}"
     )
 
-    # 4. Dropping runners that have a null value in these columns [age_cat, gender].
+    # 4. Dropping rows with splits that only contain time.
+    df = drop_rows_with_time_only_splits(df, splits_keys)
+
+    # 5. Dropping runners that have a null value in these columns [age_cat, gender].
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
 
-    # 5. Converting time and pace into seconds.
+    # 6. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 6. Converting dtype.
+    # 7. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 7. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    # 8. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
     df = convert_pace_and_speed(df, splits_keys)
 
-    # 8. Replacing '70-74', '75-79', '80+'  by '70+'.
+    # 9. Replacing '70-74', '75-79', '80+'  by '70+'.
     print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
     df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
 
-    # 9. Reordering the DataFrame columns.
+    # 10. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 10. Convert columns into best possible dtypes (dtypes are inferred).
+    # 11. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
