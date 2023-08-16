@@ -294,12 +294,13 @@ def boston_cleaner(
     3. Remove runners that did not start the marathon `race_stat = not started` or `all splits' data is null`.
     4. Dropping rows with splits that only contain time.
     5. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
-    6. The time and pace for each split in `splits_keys` are converted into seconds.
-    7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
-    8. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
-    9. Replacing `'70-74', '75-79', '80+'  by '70+'`.
-    10. Reordering the DataFrame columns according to cols_order.
-    11. Convert columns into best possible dtype using `convert_dtypes()`.
+    6. Capitalise race_state column values.
+    7. The time and pace for each split in `splits_keys` are converted into seconds.
+    8. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    9. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    10. Replacing `'70-74', '75-79', '80+'  by '70+'`.
+    11. Reordering the DataFrame columns according to cols_order.
+    12. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -330,23 +331,26 @@ def boston_cleaner(
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
 
-    # 6. Converting time and pace into seconds.
+    # 6. Capitalise race_state column values.
+    df.loc[:, "race_state"] = df["race_state"].str.capitalize()
+
+    # 7. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 7. Converting dtype.
+    # 8. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 8. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    # 9. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
     df = convert_pace_and_speed(df, splits_keys)
 
-    # 9. Replacing '70-74', '75-79', '80+'  by '70+'.
+    # 10. Replacing '70-74', '75-79', '80+'  by '70+'.
     print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
     df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
 
-    # 10. Reordering the DataFrame columns.
+    # 11. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 11. Convert columns into best possible dtypes (dtypes are inferred).
+    # 12. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
