@@ -887,13 +887,13 @@ def get_indices_of_rows_with_only_time(
     """
     ### Returns the indices of rows that have time.
     ----
-    Arguments:
+    ### Arguments:
     + df: The DataFrame to be used.
     + splits_names: The names of the splits columns.
     + skip_splits: The names of the splits columns to skip.
     + return_indices_list: If True the function will return a list of indices else it will return a dictionary of indices.
     ----
-    Returns:
+    ### Returns:
     + If `return_indices_list` is True the function will return a list of indices.
     + If `return_indices_list` is False the function will return a dictionary of indices.
     """
@@ -923,13 +923,13 @@ def drop_rows_with_time_only_splits(
     """
     ### Returns the DataFrame after dropping the rows that have time only in the splits columns.
     ----
-    Arguments:
+    ### Arguments:
     + df: The DataFrame to be used.
     + splits_names: The names of the splits columns.
     + skip_splits: The names of the splits columns to skip.
     + return_indices_list: If True the function will return a list of indices else it will return a dictionary of indices.
     ----
-    Returns:
+    ### Returns:
     + The DataFrame after dropping the rows that have time only in the splits columns.
     """
     miss_indices = get_indices_of_rows_with_only_time(
