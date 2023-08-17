@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import re
+from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.impute import IterativeImputer, KNNImputer
 
 
 def london_cleaner(
@@ -945,4 +947,308 @@ def drop_rows_with_time_only_splits(
         f"** Dropping rows with splits that only contain time: Finished: {finished_count} || Started: {started_count}"
     )
     df = df.drop(index=miss_indices).reset_index(drop=True)
+    return df
+
+
+## Imputation Functions
+
+
+def valid_splits_time(
+    df: pd.DataFrame, indices: pd.Index = None
+) -> tuple[bool, pd.Index]:
+    """
+    ### Checks if the splits time are valid.
+    --------------------------------
+    Arguments:
+    df (pd.DataFrame): The DataFrame containing the splits.
+    indices (pd.Index): The indices of the DataFrame to check.
+    --------------------------------
+    Returns:
+    bool: True if the splits time are valid, False otherwise.
+    """
+    # Create a dictionary to store the invalid splits indices.
+    invalid_index = pd.Index([])
+    # Check if the indices are provided, to only check the splits time of the selected rows.
+    if indices:
+        df = df.loc[indices]
+
+    # Select the splits time columns.
+    splits_cols = df.filter(regex="^k_.*_time$").columns.to_list()
+
+    # Check if the splits time are valid.
+    for idx, split in enumerate(splits_cols[:-1]):
+        invalid_ser = df[split] >= df[splits_cols[idx + 1]]
+        # Print the invalid splits columns.
+        if invalid_ser.any():
+            print(f"Invalid split time: {split} > {splits_cols[idx+1]}")
+            invalid_indices = invalid_ser[invalid_ser].index
+            print(invalid_indices)
+            invalid_index = invalid_index.union(invalid_indices)
+    if invalid_index.empty:
+        return True, invalid_index
+    else:
+        return False, invalid_index
+
+
+def one_hot_encode(
+    df: pd.DataFrame, column: str, return_encoder: bool = False
+) -> pd.DataFrame | tuple[pd.DataFrame, OneHotEncoder]:
+    """
+    ### This function one hot encode categorical columns then add the new columns to the DataFrame.
+    ----
+    Arguments:
+    + df: The DataFrame,
+    + column: The column to be one hot encoded.
+    + return_encoder: Whether to return the encoder or not.
+    ----
+    Returns:
+    + The DataFrame with the new columns.
+    + The encoder used to one hot encode the column, `If return_encoder is True`.
+    """
+    # Get the unique values of the column.
+    categories = df[column].unique().tolist()
+
+    # Intialise the encoder.
+    one_hot_enc = OneHotEncoder(categories=[categories], sparse_output=False)
+    # Get the column data.
+    column_data = df[column].to_numpy().reshape(-1, 1)
+    # One hot encode the column.
+    arr = one_hot_enc.fit_transform(column_data)
+    # Get the new columns names.
+    new_cols = [f"{column}_{cat}" for cat in categories]
+    # Create a DataFrame from the array.
+    tmp_df = pd.DataFrame(arr, columns=new_cols, index=df.index)
+    # Add the new columns to the DataFrame.
+    df = pd.concat([df, tmp_df], axis=1)
+
+    # Return the DataFrame and the encoder if specified.
+    if return_encoder:
+        return df, one_hot_enc
+    else:
+        return df
+
+
+def fill_time_speed_based_on_pace(
+    df: pd.DataFrame, miss_indices: dict[str, pd.Index], split_keys: list[str]
+) -> pd.DataFrame:
+    """
+    ### Fill missing time and speed values in a DataFrame.
+    ----
+    ### Arguments:
+    + df: DataFrame to fill missing values in.
+    + split_keys: List of split keys.
+    ----
+    ### Returns:
+    + DataFrame with missing values filled.
+    """
+    df = df.copy()
+
+    if not miss_indices["k_5"].empty:
+        df.loc[miss_indices["k_5"], f"k_5_time"] = df.loc[miss_indices["k_5"]].apply(
+            lambda row: row[f"k_5_pace"] * 5, axis=1
+        )
+        df.loc[miss_indices["k_5"], f"k_5_speed"] = df.loc[miss_indices["k_5"]].apply(
+            lambda row: (1 / row[f"k_5_pace"]) * 3600, axis=1
+        )
+
+    for i, key in enumerate(split_keys[1:]):
+        # N.B: i starts at 0, so we do not need to subtract 1 in the equations below.
+        if not miss_indices[key].empty:
+            if key == "k_half":
+                # 42.195 / 2 = 21.0975 ; 21.0975 - 20 = 1.0975
+                df.loc[miss_indices[key], f"{key}_time"] = df.loc[
+                    miss_indices[key]
+                ].apply(
+                    lambda row: (row[f"{key}_pace"] * 1.0975)
+                    + row[f"{split_keys[i]}_time"],
+                    axis=1,
+                )
+
+            elif key == "k_25":
+                # 5 - 1.0975 = 3.9025
+                df.loc[miss_indices[key], f"{key}_time"] = df.loc[
+                    miss_indices[key]
+                ].apply(
+                    lambda row: (row[f"{key}_pace"] * 3.9025)
+                    + row[f"{split_keys[i]}_time"],
+                    axis=1,
+                )
+
+            elif key == "k_finish":
+                # 42.195 - 40 = 2.195
+                df.loc[miss_indices[key], f"{key}_time"] = df.loc[
+                    miss_indices[key]
+                ].apply(
+                    lambda row: (row[f"{key}_pace"] * 2.195)
+                    + row[f"{split_keys[i]}_time"],
+                    axis=1,
+                )
+
+            else:
+                df.loc[miss_indices[key], f"{key}_time"] = df.loc[
+                    miss_indices[key]
+                ].apply(
+                    lambda row: (row[f"{key}_pace"] * 5) + row[f"{split_keys[i]}_time"],
+                    axis=1,
+                )
+
+            df.loc[miss_indices[key], f"{key}_speed"] = df.loc[miss_indices[key]].apply(
+                lambda row: (1 / row[f"{key}_pace"]) * 3600, axis=1
+            )
+
+    return df
+
+
+def get_indices_of_rows_missing_data(
+    df: pd.DataFrame, splits_names: list[str]
+) -> dict[str, pd.Index]:
+    """
+    ### Returns the indices of rows with missing time or pace.
+    ----
+    Arguments:
+    + df: The DataFrame to get the indices from.
+    + splits_names: The names of the splits.
+    ----
+    Returns:
+    + `dict[str, pd.Index]`: A dictionary containing the indices of rows with missing data
+    """
+    split_dict = {}
+    for split in splits_names:
+        split_dict[split] = df[
+            df[f"{split}_time"].isnull()
+            & df[f"{split}_pace"].isnull()
+            & df[f"{split}_speed"].isnull()
+        ].index
+
+    return split_dict
+
+
+def preprocess_data(
+    df: pd.DataFrame, mmsca: MinMaxScaler, return_encoder=False
+) -> pd.DataFrame | tuple[pd.DataFrame, OneHotEncoder, OneHotEncoder]:
+    """
+    ### Function to preprocess the data.
+    ----
+    ### Arguments:
+    + df: The DataFrame to preprocess.
+    + mms: The MinMaxScaler to use to normalise the pace columns.
+    + return_encoder: If True the encoder for gender and age_cat will be returned.
+    ----
+    ### Returns
+    + `df`: if return_encoder is False, only the preprocessed DataFrame.
+    + `[df, gender_encoder, age_cat_encoder]`: if return_encoder is True, a tuple of the preprocessed DataFrame, gender encoder and age_cat encoder.
+    """
+    if return_encoder:
+        # One-hot encoding the gender column.
+        df, gender_encoder = one_hot_encode(df, "gender", return_encoder=return_encoder)
+        # One-hot encoding the age_cat column.
+        df, age_encoder = one_hot_encode(df, "age_cat", return_encoder=return_encoder)
+    else:
+        df = one_hot_encode(df, "gender", return_encoder=return_encoder)
+        df = one_hot_encode(df, "age_cat", return_encoder=return_encoder)
+
+    # Normalise the pace columns. (It is the only feature that will be imputed.)
+    df.loc[:, "k_5_pace":"k_finish_pace":3] = mmsca.fit_transform(
+        df.filter(regex="^k_.*_pace$")
+    )
+
+    if return_encoder:
+        return df, gender_encoder, age_encoder
+    else:
+        return df
+
+
+def impute_data(
+    df: pd.DataFrame, imputer: KNNImputer | IterativeImputer, mmsca: MinMaxScaler
+) -> pd.DataFrame:
+    """
+    ### Impute missing values in pace columns of the DataFrame.
+    ----
+    ### Arguments:
+    + df: DataFrame to impute.
+    + imputer: Imputer to use for imputation.
+    + mms: MinMaxScaler used to scale the data before imputation.
+    ----
+    ### Returns:
+    + `df`: DataFrame with imputed values.
+    """
+    df = df.copy()
+    # Only pace and one-hot encoded columns will be utilised for imputation.
+    imputed_values = imputer.fit_transform(
+        df.filter(regex="^k_.*_pace$|^gender_.*$|^age_cat_.*$")
+    )
+    # Inverse transform the imputed values, and only keeping the 10 first values which represent the pace of each split.
+    org_vals = mmsca.inverse_transform(imputed_values[:, :10])
+    # Replace the missing pace values with the imputed values.
+    df.loc[:, "k_5_pace":"k_finish_pace":3] = org_vals
+    return df
+
+
+def gen_full_df(
+    df: pd.DataFrame,
+    miss_indices: list[str],
+    splits_names: list[str],
+    drop_invalid_splits: bool = True,
+) -> pd.DataFrame:
+    """
+    ### Generate a full DataFrame with all the splits time and speed.
+    ----
+    ### Arguments:
+    + df: The DataFrame to generate the full DataFrame from.
+    + miss_indices: The indices of the rows with missing data.
+    + splits_names: The names of the splits.
+    + drop_invalid_splits: If True the function will drop the rows with invalid splits time.
+    ----
+    ### Returns:
+    + `df`: The full DataFrame.
+    """
+    # Calculating time and speed for the missing values based on the pace.
+    df = fill_time_speed_based_on_pace(df, miss_indices, splits_names)
+    df = df.loc[:, :"k_finish_speed"]
+    df = df.round(2)
+    # Check if the splits are valid (i.e. no overlap in time) and there are no missing values.
+    miss_values_count = df.isna().sum().sum()
+    # Check if the splits are valid (i.e. no overlap in time).
+    all_splits_valid, invalid_index = valid_splits_time(df)
+    if all_splits_valid and miss_values_count == 0:
+        return df
+    else:
+        if drop_invalid_splits:
+            print("\n** Dropping invalid splits, Count:", len(invalid_index))
+            df.drop(index=invalid_index, inplace=True)
+            return df
+
+        raise ValueError(
+            "Invalid splits time or there are still missing values in the DataFrame."
+        )
+
+
+def preprocess_impute_fill(
+    df: pd.DataFrame,
+    miss_indices: list[int],
+    imputer: KNNImputer | IterativeImputer,
+    scaler: MinMaxScaler,
+    splits_names: list[str],
+    drop_invalid_splits: bool = True,
+) -> pd.DataFrame:
+    """
+    ### Function to Preprocess, impute and fill missing values in the DataFrame, using the provided imputer and scaler.
+    ----
+    ### Arguments:
+    + df: The DataFrame to be preprocessed and imputed.
+    + miss_indices: The indices of the missing values in the DataFrame.
+    + imputer: The imputer to be used to impute the missing values.
+    + scaler: The scaler to be used to scale the DataFrame.
+    + splits_names: The names of the splits to be used in the DataFrame.
+    + drop_invalid_splits: If True the function will drop the rows with invalid splits time.
+    ----
+    ### Returns:
+    + df: The preprocessed, imputed and filled DataFrame.
+    """
+    # Preprocess the data, using the scaler (MinMaxScaler).
+    df = preprocess_data(df, scaler)
+    # Impute the missing values, using the imputer.
+    df = impute_data(df, imputer, scaler)
+    # Fill the missing values, and return a full DataFrame.
+    df = gen_full_df(df, miss_indices, splits_names, drop_invalid_splits)
     return df
