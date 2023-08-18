@@ -981,6 +981,8 @@ def valid_splits_time(
 
     # Check if the splits time are valid.
     for idx, split_time in enumerate(splits_time_cols[:-1]):
+        print("-" * 50)
+        # Get the next split time column.
         next_split_time = splits_time_cols[idx + 1]
         # Calculate the split time difference, between the current split and the next split.
         split_diff_time = df[next_split_time] - df[split_time]
@@ -991,15 +993,17 @@ def valid_splits_time(
         # Check if the split non-cumulative time is greater than the splits's time difference + 5 seconds, if so the splits are invalid.
         # N.B The 5 seconds were added as an acceptable error margin, since even the provided splits are not always accurate.
         # usually there is a discrepancy of 1-3 seconds between `split time`` and `split pace * split distance.`
-        invalid_ser = (split_non_cumulative_time.round(0)) > (
-            split_diff_time.round(0) + 5
-        )
+        invalid_ser = (
+            split_non_cumulative_time.round(0) < split_diff_time.round(0) - 5
+        ) | (split_non_cumulative_time.round(0) > split_diff_time.round(0) + 5)
         if invalid_ser.any():
             print(
-                f"Invalid split time diff: {next_split_time} (non-cumulative) > ({next_split_time} - {split_time} + 5)"
+                f"Invalid split time diff: {next_split_time} (non-cumulative) < ({next_split_time} - {split_time} - 5) OR {next_split_time} (non-cumulative) > ({next_split_time} - {split_time} + 5)"
             )
             invalid_indices = invalid_ser[invalid_ser].index
-            print(invalid_indices)
+            print(
+                f"Total Invalid: {invalid_indices.shape[0]} || First 3 Indices: {invalid_indices.values[:3]}"
+            )
             invalid_index = invalid_index.union(invalid_indices)
 
         # check if the split time is greater than the next split time, if so the splits are invalid.
@@ -1008,7 +1012,9 @@ def valid_splits_time(
             # Print the invalid splits columns.
             print(f"Invalid split time: {split_time} > {next_split_time}")
             invalid_indices = invalid_ser[invalid_ser].index
-            print(invalid_indices)
+            print(
+                f"Total Invalid: {invalid_indices.shape[0]} || First 3 Indices: {invalid_indices.values[:3]}"
+            )
             invalid_index = invalid_index.union(invalid_indices)
 
     if invalid_index.empty:
@@ -1232,7 +1238,9 @@ def gen_full_df(
     # Calculating time and speed for the missing values based on the pace.
     df = fill_time_speed_based_on_pace(df, miss_indices, splits_names)
     df = df.loc[:, :"k_finish_speed"]
-    df = df.round(2)
+    # Rounding the splits time and pace to the nearest second.
+    cols_to_process = df.filter(regex="^k_.*_time$|^k_.*_pace$").columns
+    df.loc[:, cols_to_process] = df.loc[:, cols_to_process].round(0)
     # Check if the splits are valid (i.e. no overlap in time) and there are no missing values.
     miss_values_count = df.isna().sum().sum()
     # Check if the splits are valid (i.e. no overlap in time).
