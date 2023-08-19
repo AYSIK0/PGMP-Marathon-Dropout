@@ -1219,7 +1219,7 @@ def impute_data(
 
 def gen_full_df(
     df: pd.DataFrame,
-    miss_indices: list[str],
+    miss_indices: dict[str, pd.Index],
     splits_names: list[str],
     drop_invalid_splits: bool = True,
 ) -> pd.DataFrame:
