@@ -1145,14 +1145,18 @@ def get_indices_of_rows_missing_data(
     Returns:
     + `dict[str, pd.Index]`: A dictionary containing the indices of rows with missing data
     """
+    all_indices = pd.Index([])
     split_dict = {}
     for split in splits_names:
-        split_dict[split] = df[
+        miss_index = df[
             df[f"{split}_time"].isnull()
             & df[f"{split}_pace"].isnull()
             & df[f"{split}_speed"].isnull()
         ].index
+        split_dict[split] = miss_index
+        all_indices = all_indices.union(miss_index)
 
+    print(f"Total missing values: {all_indices.shape[0]}")
     return split_dict
 
 
@@ -1290,4 +1294,41 @@ def preprocess_impute_fill(
     df = impute_data(df, imputer, scaler)
     # Fill the missing values, and return a full DataFrame.
     df = gen_full_df(df, miss_indices, splits_names, drop_invalid_splits)
+    return df
+
+
+def fill_houston_20k(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    ### Fills the missing values in 20k split of Houston dataset.
+    ----
+    ### Arguments:
+    + df: The DataFrame to fill.
+    ----
+    ### Returns:
+    + The filled DataFrame.
+    """
+    df = df.copy()
+    # Get the indices of the missing values in 20k split where 15k and half splits are not missing.
+    valid_15_half = (df["k_15_time"].notna()) & (df["k_half_time"].notna())
+    # Fill the missing values in 20k split time.
+    # N.B 21.0975 is the distance in km of a half the marathon, thus half split distance is 21.0975 - 20 = 1.0975
+    df.loc[valid_15_half, "k_20_time"] = (
+        df.loc[valid_15_half]
+        .apply(lambda row: row["k_half_time"] - (row["k_half_pace"] * 1.0975), axis=1)
+        .round(0)
+    )
+    # Fill the missing values in 20k split pace.
+    df.loc[valid_15_half, "k_20_pace"] = (
+        df.loc[valid_15_half]
+        .apply(lambda row: (row["k_20_time"] - row["k_15_time"]) / 5, axis=1)
+        .round(0)
+    )
+    # Fill the missing values in 20k split speed.
+    df.loc[valid_15_half, "k_20_speed"] = (
+        df.loc[valid_15_half]
+        .apply(lambda row: (1 / row["k_20_pace"]) * 3600, axis=1)
+        .round(2)
+    )
+
+    print(f"Filled {valid_15_half.sum()} missing values in 20k split.")
     return df
