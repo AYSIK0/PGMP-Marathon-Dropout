@@ -215,7 +215,8 @@ def stockholm_cleaner(
     + 9.4 the column named `yob` changed to `age_cat`.
     10. Replacing `last_split` values with the standard values.
     11. Reordering the DataFrame columns according to cols_order.
-    12. Convert columns into best possible dtype using `convert_dtypes()`.
+    12. Drop rows with any split speed > 22.0 km/h.
+    13. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -278,7 +279,10 @@ def stockholm_cleaner(
     # 11. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 12. Convert columns into best possible dtypes (dtypes are inferred).
+    # 12. Drop rows with any split speed > 22.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 22.0)
+
+    # 13. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
