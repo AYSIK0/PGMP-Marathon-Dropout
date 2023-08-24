@@ -34,7 +34,7 @@ def london_cleaner(
     7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     8. Replacing these age categories `'70-74', '75-79', '80-84', '80+', '85+' by '70+'`
     9. Reordering the DataFrame columns according to cols_order.
-    10. Drop rows with any split speed > 22.0 km/h.
+    10. Drop rows with any split speed > 24.0 km/h.
     11. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
@@ -83,8 +83,8 @@ def london_cleaner(
     # 9. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 10. Drop rows with any split speed > 22.0 km/h.
-    df = drop_rows_with_splits_speed_above(df, 22.0)
+    # 10. Drop rows with any split speed > 24.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 24.0)
 
     # 11. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
@@ -121,7 +121,7 @@ def hamburg_cleaner(
     8. Dropping rows with splits that only contain time.
     9. Replacing `age_cat` and `last_split` values with the standard values.
     10. Reordering the DataFrame columns according to cols_order.
-    11. Drop rows with any split speed > 22.0 km/h.
+    11. Drop rows with any split speed > 24.0 km/h.
     12. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
@@ -170,8 +170,8 @@ def hamburg_cleaner(
     # 10. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 11. Drop rows with any split speed > 22.0 km/h.
-    df = drop_rows_with_splits_speed_above(df, 22.0)
+    # 11. Drop rows with any split speed > 24.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 24.0)
 
     # 12. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
@@ -215,7 +215,7 @@ def stockholm_cleaner(
     + 9.4 the column named `yob` changed to `age_cat`.
     10. Replacing `last_split` values with the standard values.
     11. Reordering the DataFrame columns according to cols_order.
-    12. Drop rows with any split speed > 22.0 km/h.
+    12. Drop rows with any split speed > 24.0 km/h.
     13. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
@@ -280,7 +280,7 @@ def stockholm_cleaner(
     df = df[cols_order]
 
     # 12. Drop rows with any split speed > 22.0 km/h.
-    df = drop_rows_with_splits_speed_above(df, 22.0)
+    df = drop_rows_with_splits_speed_above(df, 24.0)
 
     # 13. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
@@ -316,7 +316,8 @@ def boston_cleaner(
     9. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
     10. Replacing `'70-74', '75-79', '80+'  by '70+'`.
     11. Reordering the DataFrame columns according to cols_order.
-    12. Convert columns into best possible dtype using `convert_dtypes()`.
+    12. Drop rows with any split speed > 22.0 km/h.
+    13. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -366,7 +367,10 @@ def boston_cleaner(
     # 11. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 12. Convert columns into best possible dtypes (dtypes are inferred).
+    # 12. Drop rows with any split speed > 24.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 24.0)
+
+    # 13. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
@@ -405,7 +409,7 @@ def chicago_cleaner(
     + 11.1 Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
     + 11.2 Replacing '70-74', '75-79', '80+'  by '70+'.
     12. Convert columns into best possible dtype using `convert_dtypes()`.
-    13. Drop rows with any split speed > 22.0 km/h.
+    13. Drop rows with any split speed > 24.0 km/h.
     14. Reordering the DataFrame columns according to cols_order.
     """
     df = df.copy()
@@ -474,8 +478,8 @@ def chicago_cleaner(
     # 12. Reordering the DataFrame columns.
     df = df.convert_dtypes()
 
-    # 13. Drop rows with any split speed > 22.0 km/h.
-    df = drop_rows_with_splits_speed_above(df, 22.0)
+    # 13. Drop rows with any split speed > 24.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 24.0)
 
     # 14. Convert columns into best possible dtypes (dtypes are inferred).
     df = df[cols_order]
@@ -521,7 +525,7 @@ def houston_cleaner(
     + 11.1 Getting the last_split column values based on the max value in the splits columns.
     + 11.2 Replacing the last_split column values with the standard values.
     12. Reordering the DataFrame columns according to cols_order.
-    13. Drop rows with any split speed > 22.0 km/h.
+    13. Drop rows with any split speed > 24.0 km/h.
     14. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
@@ -614,8 +618,8 @@ def houston_cleaner(
     # 12. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 13. Drop rows with any split speed > 22.0 km/h.
-    df = drop_rows_with_splits_speed_above(df, 22.0)
+    # 13. Drop rows with any split speed > 24.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 24.0)
 
     # 14. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
@@ -973,7 +977,7 @@ def drop_rows_with_time_only_splits(
 
 
 def drop_rows_with_splits_speed_above(
-    df: pd.DataFrame, limit: float = 22.0
+    df: pd.DataFrame, limit: float = 24.0
 ) -> pd.DataFrame:
     """
     ### Function to drop rows with splits speed above the specified limit.
@@ -986,7 +990,7 @@ def drop_rows_with_splits_speed_above(
     """
     # Get the indices of rows with splits speed above the limit.
     indices = df[(df.loc[:, "k_5_speed"::3] > limit).any(axis=1)].index
-    print(f"** Dropping rows with any split speed > 22: {indices.shape[0]}")
+    print(f"** Dropping rows with any split speed > {limit}km/h: {indices.shape[0]}")
     # Drop the rows.
     df = df.drop(index=indices).reset_index(drop=True)
     return df
