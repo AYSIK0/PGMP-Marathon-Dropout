@@ -121,7 +121,8 @@ def hamburg_cleaner(
     8. Dropping rows with splits that only contain time.
     9. Replacing `age_cat` and `last_split` values with the standard values.
     10. Reordering the DataFrame columns according to cols_order.
-    11. Convert columns into best possible dtype using `convert_dtypes()`.
+    11. Drop rows with any split speed > 22.0 km/h.
+    12. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -169,7 +170,10 @@ def hamburg_cleaner(
     # 10. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 11. Convert columns into best possible dtypes (dtypes are inferred).
+    # 11. Drop rows with any split speed > 22.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 22.0)
+
+    # 12. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
