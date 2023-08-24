@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 import re
+import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
 from sklearn.impute import IterativeImputer, KNNImputer
 
@@ -32,7 +34,8 @@ def london_cleaner(
     7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
     8. Replacing these age categories `'70-74', '75-79', '80-84', '80+', '85+' by '70+'`
     9. Reordering the DataFrame columns according to cols_order.
-    10. Convert columns into best possible dtype using `convert_dtypes()`.
+    10. Drop rows with any split speed > 22.0 km/h.
+    11. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -80,7 +83,10 @@ def london_cleaner(
     # 9. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 10. Convert columns into best possible dtypes (dtypes are inferred).
+    # 10. Drop rows with any split speed > 22.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 22.0)
+
+    # 11. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
@@ -950,6 +956,26 @@ def drop_rows_with_time_only_splits(
     return df
 
 
+def drop_rows_with_splits_speed_above(
+    df: pd.DataFrame, limit: float = 22.0
+) -> pd.DataFrame:
+    """
+    ### Function to drop rows with splits speed above the specified limit.
+    ----
+    ### Arguments:
+    + df: The DataFrame to be used.
+    + limit: The speed limit.
+    ----
+    ### Returns the DataFrame after dropping the rows.
+    """
+    # Get the indices of rows with splits speed above the limit.
+    indices = df[(df.loc[:, "k_5_speed"::3] > limit).any(axis=1)].index
+    print(f"** Dropping rows with any split speed > 22: {indices.shape[0]}")
+    # Drop the rows.
+    df = df.drop(index=indices).reset_index(drop=True)
+    return df
+
+
 ## Imputation Functions
 
 
@@ -1332,3 +1358,45 @@ def fill_houston_20k(df: pd.DataFrame) -> pd.DataFrame:
 
     print(f"Filled {valid_15_half.sum()} missing values in 20k split.")
     return df
+
+
+def plot_splits_distribution(
+    df: pd.DataFrame, splits_keys: list[str], year: str
+) -> None:
+    """
+    ### Plot the distribution of the splits times, paces, and speeds.
+    ----
+    ### Arguments:
+    + df: The DataFrame to plot its splits distribution.
+    + splits_keys: The keys of the splits.
+    ----
+    ### Returns:
+    + None
+    """
+    time_fig = plt.figure(figsize=(20, 10))
+    for i, key in enumerate(splits_keys):
+        plt.subplot(2, 5, i + 1)
+        sns.boxplot(data=df[f"{key}_time"].astype(np.float64))
+        plt.title(f"{key}")
+        plt.ylabel(f"{key} Time (seconds)")
+    time_fig.suptitle(f"London {year} Marathon Time Splits Distribution")
+    plt.tight_layout()
+
+    pace_fig = plt.figure(figsize=(20, 10))
+    for i, key in enumerate(splits_keys):
+        plt.subplot(2, 5, i + 1)
+        sns.boxplot(data=df[f"{key}_pace"].astype(np.float64))
+        plt.title(f"{key}")
+        plt.ylabel(f"{key} Pace (sec/km)")
+    pace_fig.suptitle(f"London {year} Marathon Pace Splits Distribution")
+    plt.tight_layout()
+
+    speed_fig = plt.figure(figsize=(20, 10))
+    for i, key in enumerate(splits_keys):
+        plt.subplot(2, 5, i + 1)
+        sns.boxplot(data=df[f"{key}_speed"].astype(np.float64))
+        plt.title(f"{key}")
+        plt.ylabel(f"{key} Speed (km/h)")
+    speed_fig.suptitle(f"London {year} Marathon Speed Splits Distribution")
+    plt.tight_layout()
+    plt.show()
