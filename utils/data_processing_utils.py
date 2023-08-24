@@ -405,7 +405,8 @@ def chicago_cleaner(
     + 11.1 Replacing "20-24", "25-29", "30-34", and "35-39" by "18-39".
     + 11.2 Replacing '70-74', '75-79', '80+'  by '70+'.
     12. Convert columns into best possible dtype using `convert_dtypes()`.
-    13. Reordering the DataFrame columns according to cols_order.
+    13. Drop rows with any split speed > 22.0 km/h.
+    14. Reordering the DataFrame columns according to cols_order.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -473,7 +474,10 @@ def chicago_cleaner(
     # 12. Reordering the DataFrame columns.
     df = df.convert_dtypes()
 
-    # 13. Convert columns into best possible dtypes (dtypes are inferred).
+    # 13. Drop rows with any split speed > 22.0 km/h.
+    df = drop_rows_with_splits_speed_above(df, 22.0)
+
+    # 14. Convert columns into best possible dtypes (dtypes are inferred).
     df = df[cols_order]
 
     return df
