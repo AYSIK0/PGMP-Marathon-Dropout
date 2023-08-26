@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import OneHotEncoder, MinMaxScaler
+from sklearn.preprocessing import OneHotEncoder, RobustScaler
 from sklearn.impute import IterativeImputer, KNNImputer
 
 
@@ -1207,14 +1207,14 @@ def get_indices_of_rows_missing_data(
 
 
 def preprocess_data(
-    df: pd.DataFrame, mmsca: MinMaxScaler, return_encoder=False
+    df: pd.DataFrame, scaler: RobustScaler, return_encoder=False
 ) -> pd.DataFrame | tuple[pd.DataFrame, OneHotEncoder, OneHotEncoder]:
     """
     ### Function to preprocess the data.
     ----
     ### Arguments:
     + df: The DataFrame to preprocess.
-    + mms: The MinMaxScaler to use to normalise the pace columns.
+    + scaler: The scaler to use to standardize the pace columns.
     + return_encoder: If True the encoder for gender and age_cat will be returned.
     ----
     ### Returns
@@ -1231,7 +1231,7 @@ def preprocess_data(
         df = one_hot_encode(df, "age_cat", return_encoder=return_encoder)
 
     # Normalise the pace columns. (It is the only feature that will be imputed.)
-    df.loc[:, "k_5_pace":"k_finish_pace":3] = mmsca.fit_transform(
+    df.loc[:, "k_5_pace":"k_finish_pace":3] = scaler.fit_transform(
         df.filter(regex="^k_.*_pace$")
     )
 
@@ -1242,7 +1242,7 @@ def preprocess_data(
 
 
 def impute_data(
-    df: pd.DataFrame, imputer: KNNImputer | IterativeImputer, mmsca: MinMaxScaler
+    df: pd.DataFrame, imputer: KNNImputer | IterativeImputer, scaler: RobustScaler
 ) -> pd.DataFrame:
     """
     ### Impute missing values in pace columns of the DataFrame.
@@ -1250,7 +1250,7 @@ def impute_data(
     ### Arguments:
     + df: DataFrame to impute.
     + imputer: Imputer to use for imputation.
-    + mms: MinMaxScaler used to scale the data before imputation.
+    + scaler: Scaler used to inverse the standardization.
     ----
     ### Returns:
     + `df`: DataFrame with imputed values.
@@ -1261,7 +1261,7 @@ def impute_data(
         df.filter(regex="^k_.*_pace$|^gender_.*$|^age_cat_.*$")
     )
     # Inverse transform the imputed values, and only keeping the 10 first values which represent the pace of each split.
-    org_vals = mmsca.inverse_transform(imputed_values[:, :10])
+    org_vals = scaler.inverse_transform(imputed_values[:, :10])
     # Replace the missing pace values with the imputed values.
     df.loc[:, "k_5_pace":"k_finish_pace":3] = org_vals
     return df
@@ -1316,7 +1316,7 @@ def preprocess_impute_fill(
     df: pd.DataFrame,
     miss_indices: list[int],
     imputer: KNNImputer | IterativeImputer,
-    scaler: MinMaxScaler,
+    scaler: RobustScaler,
     splits_names: list[str],
     drop_invalid_splits: bool = True,
 ) -> pd.DataFrame:
