@@ -321,16 +321,17 @@ def boston_cleaner(
     2. Replacing `['-', ', -, {SPACE}]` with an empty character.
     3. Remove runners that did not start the marathon `race_stat = not started` or `all splits' data is null`.
     4. Dropping runners that do not have a non-null value in these columns `[age_cat, gender]`.
-    5. Capitalise race_state column values.
-    6. The time and pace for each split in `splits_keys` are converted into seconds.
-    7. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
-    8. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
-    8. Replacing `'70-74', '75-79', '80+'  by '70+'`.
-    10. Reordering the DataFrame columns according to cols_order.
-    11. Dropping finishers that have any missing split data.
-    12. Dropping rows with splits that only contain time.
-    13. Drop rows with any split speed > 22.0 km/h.
-    14. Convert columns into best possible dtype using `convert_dtypes()`.
+    5. Replace 'Did Not Finish' -> 'Started' and Capitalise race_state column values.
+    6. Replace last_split 'miles values' by the nearest km value.
+    7. The time and pace for each split in `splits_keys` are converted into seconds.
+    8. The time, pace, and speed for each split in `splits_keys` dtype are converted to `Int32`, `Int32`, and`Float32` respectively.
+    9. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    10. Replacing `'70-74', '75-79', '80+'  by '70+'`.
+    11. Reordering the DataFrame columns according to cols_order.
+    12. Dropping finishers that have any missing split data.
+    13. Dropping rows with splits that only contain time.
+    14. Drop rows with any split speed > 22.0 km/h.
+    15. Convert columns into best possible dtype using `convert_dtypes()`.
     """
     df = df.copy()
     # 1. Removing unused columns.
@@ -358,35 +359,46 @@ def boston_cleaner(
     print("** Dropping rows with null values in `age_cat` and `gender` columns:")
     df = drop_null_by_col(df, ["age_cat", "gender"])
 
-    # 5. Capitalise race_state column values.
+    # 5. Replace 'Did Not Finish' -> 'Started' and Capitalise race_state column values.
+    df["race_state"].replace(
+        ["Did Not Finish", "Did not finish"], ["Started", "Started"], inplace=True
+    )
     df.loc[:, "race_state"] = df["race_state"].str.capitalize()
 
-    # 6. Converting time and pace into seconds.
+    # 6. Replace last_split 'miles values' by the nearest km value.
+    print("Replacing last_split 'miles values' by the nearest km value.")
+    df["last_split"].replace(
+        ["20 Miles", "21 Miles", "23 Miles", "24 Miles", "25.2 Miles"],
+        ["30K", "30K", "35K", "35K", "40K"],
+        inplace=True,
+    )
+
+    # 7. Converting time and pace into seconds.
     df = convert_to_sec(df, splits_keys)
 
-    # 7. Converting dtype.
+    # 8. Converting dtype.
     df = convert_split_dtype(df, splits_keys)
 
-    # 8. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
+    # 9. Convert to pace and speed from sec/mile and miles/h to sec/km and km/h respectively.
     df = convert_pace_and_speed(df, splits_keys)
 
-    # 9. Replacing '70-74', '75-79', '80+'  by '70+'.
+    # 10. Replacing '70-74', '75-79', '80+'  by '70+'.
     print("** Replacing these age categories '70-74', '75-79', '80+' by '70+'")
     df["age_cat"].replace(["70-74", "75-79", "80+"], "70+", inplace=True)
 
-    # 10. Reordering the DataFrame columns.
+    # 11. Reordering the DataFrame columns.
     df = df[cols_order]
 
-    # 11. Dropping finishers that have any missing split data.
+    # 12. Dropping finishers that have any missing split data.
     df = drop_finishers_with_missing_data(df)
 
-    # 12. Dropping rows with splits that only contain time.
+    # 13. Dropping rows with splits that only contain time.
     df = drop_rows_with_time_only_splits(df, splits_keys)
 
-    # 13. Drop rows with any split speed > 24.0 km/h.
+    # 14. Drop rows with any split speed > 24.0 km/h.
     df = drop_rows_with_splits_speed_above(df, 24.0)
 
-    # 14. Convert columns into best possible dtypes (dtypes are inferred).
+    # 15. Convert columns into best possible dtypes (dtypes are inferred).
     df = df.convert_dtypes()
 
     return df
@@ -1440,6 +1452,36 @@ def fill_houston_20k(df: pd.DataFrame) -> pd.DataFrame:
     )
 
     print(f"Filled {valid_15_half.sum()} missing values in 20k split.")
+    return df
+
+
+def adjust_boston_pace_and_pace(df: pd.DataFrame, k_40: bool = False) -> pd.DataFrame:
+    """
+    ### Adjusting the Boston Marathon Pace and Speed, for 35K and Finnish split, and 40K split if specified.
+    ----
+    ### Arguments:
+    + df: The DataFrame to adjust.
+    + k_40: Whether to adjust the 40K split or not.
+    ----
+    ### Returns:
+    + df: The adjusted DataFrame.
+    """
+    # Adjusting the 35K pace and speed.
+    k_35_non_cum_time = df.loc[:, "k_35_time"] - df.loc[:, "k_30_time"].round(0)
+    df.loc[:, "k_35_pace"] = (k_35_non_cum_time / 5).round(0)
+    df.loc[:, "k_35_speed"] = (1 / df.loc[:, "k_35_pace"] * 3600).round(2)
+
+    if k_40:
+        # Adjusting the 40K pace and speed.
+        k_40_non_cum_time = df.loc[:, "k_40_time"] - df.loc[:, "k_35_time"].round(0)
+        df.loc[:, "k_40_pace"] = (k_40_non_cum_time / 5).round(0)
+        df.loc[:, "k_40_speed"] = (1 / df.loc[:, "k_40_pace"] * 3600).round(2)
+
+    # Adjusting the Finish pace and speed.
+    k_finish_non_cum_time = df.loc[:, "k_finish_time"] - df.loc[:, "k_40_time"].round(0)
+    df.loc[:, "k_finish_pace"] = (k_finish_non_cum_time / 2.195).round(0)
+    df.loc[:, "k_finish_speed"] = (1 / df.loc[:, "k_finish_pace"] * 3600).round(2)
+
     return df
 
 
