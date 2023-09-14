@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.preprocessing import OneHotEncoder, RobustScaler
 from sklearn.impute import IterativeImputer, KNNImputer
+import os
 
 
 def london_cleaner(
@@ -1525,3 +1526,220 @@ def plot_splits_distribution(
     speed_fig.suptitle(f"{marathon_name} {year} Marathon Speed Splits Distribution")
     plt.tight_layout()
     plt.show()
+
+
+## Features Engineering Functions
+
+
+def add_weather(
+    df: pd.DataFrame,
+    weather_df: pd.DataFrame,
+    weather_cols: list[str],
+    marathon_name: str,
+    year: str,
+) -> pd.DataFrame:
+    """
+    ### Add the weather data to the DataFrame.
+    ----
+    ### Arguments:
+    + df: The DataFrame.
+    + weather_df: The weather DataFrame.
+    + weather_cols: The weather columns.
+    + marathon_name: The name of the marathon.
+    + year: The year of the marathon.
+    ----
+    ### Returns:
+    + df: The DataFrame with the weather data.
+    """
+    weather_np_arr = weather_df.loc[
+        (weather_df["Marathon"] == marathon_name) & (weather_df["Year"] == int(year)),
+        "Daily Min (C)":,
+    ].to_numpy()[0]
+    for i, col in enumerate(weather_cols):
+        df[col] = weather_np_arr[i]
+    return df
+
+
+def get_runner_type(time: int) -> str:
+    """
+    ### Get the runner category, based on their finish time.
+    ----
+    ### Arguments:
+    + time: The time of the runner.
+    ----
+    ### Returns:
+    + The runner category.
+    """
+    ##########
+    # elite <= 2:29:00 (8940 seconds)
+    # 2:29:01 (8941 seconds) <= sub-elite <= 2:59:00 (10740)
+    # 2:59:01 (10741 seconds) <= recreational-fast <= 4:14:00 (15240)
+    # 4:14:01 (15241) <= recreational-slow <= 5:29:00 (19740)
+    # occasional >= 5:29:01 (19741)
+    ##########
+    if time <= 8940:
+        return "elite"
+    elif 8941 <= time <= 10740:
+        return "sub-elite"
+    elif 10741 <= time <= 15240:
+        return "recreational-fast"
+    elif 15241 <= time <= 19740:
+        return "recreational-slow"
+    else:
+        return "occasional"
+
+
+def add_runner_category(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    ### Add the runner category to the DataFrame.
+    ----
+    ### Arguments:
+    + df: The DataFrame.
+    ----
+    ### Returns:
+    + df: The DataFrame with the runner category.
+    """
+    df["runner_type"] = df["k_finish_time"].apply(get_runner_type)
+    return df
+
+
+def add_split_dnf_pct(df: pd.DataFrame, splits_names: list[str]) -> pd.DataFrame:
+    """
+    ### Add the DNF percentage of each split to the DataFrame.
+    ----
+    ### Arguments:
+    + df: The DataFrame.
+    + splits_names: The names of the splits.
+    ----
+    ### Returns:
+    + df: The DataFrame with the DNF percentage of each split.
+    """
+    # DNF percentage of each split.
+    dropout_last_split = (
+        df[df["race_state"] == "Started"]
+        .last_split.str.lower()
+        .value_counts(normalize=True, dropna=False)
+        * 100
+    ).round(2)
+    # getting the splits names, excluding the finish split, since it will not have any DNFs.
+    splits_names = list(map(lambda x: x.lower(), splits_names[:-1]))
+    # If a split is not in the last_split col, it means that no one dropped out at that split thus the DNF percentage at that split is 0%.
+    for split in splits_names:
+        if split not in dropout_last_split.index:
+            dropout_last_split[split] = 0
+    # Add the DNF percentage of each split to the DataFrame.
+    dropout_last_split_cols = [f"{col}_dnf_pct" for col in splits_names]
+    df[dropout_last_split_cols] = dropout_last_split
+    return df
+
+
+def add_extra_features(
+    df: pd.DataFrame,
+    marathon_name: str,
+    year: str,
+    weather_df: pd.DataFrame,
+    weather_cols: list[str],
+    splits_names: list[str],
+    cols_order: list[str] = None,
+) -> pd.DataFrame | None:
+    """
+    ### Add the weather data and runner category to the DataFrame.
+    ----
+    ### Arguments:
+    + df: The DataFrame.
+    + marathon_name: The name of the marathon.
+    + years: The years of the marathon.
+    + weather_df: The weather DataFrame.
+    + weather_cols: The weather columns.
+    + splits_names: The names of the splits.
+    + cols_order: The order of the columns.
+    ----
+    ### Returns:
+    + df: The DataFrame with the weather data and runner category, if `parent_save_path` is None.
+    + None, if `parent_save_path` is not None.
+    """
+    # Add the weather data.
+    df = add_weather(df, weather_df, weather_cols, marathon_name, year)
+    # Add runner category.
+    df = add_runner_category(df)
+    # Add DNF percentage of each split.
+    df = add_split_dnf_pct(df, splits_names)
+    # Reorder the columns.
+    if cols_order is not None:
+        df = df[cols_order]
+    return df
+
+
+def load_and_save_df_with_extra_features(
+    marathon_name: str,
+    years: list[str],
+    data_parent_path: str,
+    parent_save_path: str,
+    weather_df: pd.DataFrame,
+    weather_cols: list[str],
+    splits_names: list[str],
+    dtype: dict[str, str],
+    cols_order: list[str] = None,
+) -> None:
+    """
+    ### Load the DataFrames, add the weather data and runner category, then save it.
+    ----
+    ### Arguments:
+    + marathon_name: The name of the marathon.
+    + years: The years of the marathon.
+    + data_parent_path: The path to load the DataFrame.
+    + parent_save_path: The path to save the DataFrame.
+    + weather_df: The weather DataFrame.
+    + weather_cols: The weather columns.
+    + splits_names: The names of the splits.
+    + dtype: The data types of the columns.
+    + cols_order: The order of the columns.
+    ----
+    ### Returns:
+    + None
+    """
+    for year in years:
+        # Define Load Paths.
+        iter_path = f"{data_parent_path}/{marathon_name}{year}/{marathon_name}{year}_iter_impute.csv"
+        knn_path = f"{data_parent_path}/{marathon_name}{year}/{marathon_name}{year}_knn_impute.csv"
+        # Define Save Paths.
+        iter_save_path = f"{parent_save_path}/{marathon_name}{year}/{marathon_name}{year}_iter_ext.csv"
+        knn_save_path = f"{parent_save_path}/{marathon_name}{year}/{marathon_name}{year}_knn_ext.csv"
+
+        # Load the DataFrames.
+        if os.path.isfile(iter_path) and os.path.isfile(knn_path):
+            df_iter = pd.read_csv(iter_path, dtype=dtype)
+            df_knn = pd.read_csv(knn_path, dtype=dtype)
+        else:
+            print(f"DataFrame not found at {iter_path} or {knn_path}.")
+            continue
+
+        # Add the weather data and runner category.
+        df_iter = add_extra_features(
+            df_iter,
+            marathon_name,
+            year,
+            weather_df,
+            weather_cols,
+            splits_names,
+            cols_order,
+        )
+        df_knn = add_extra_features(
+            df_knn,
+            marathon_name,
+            year,
+            weather_df,
+            weather_cols,
+            splits_names,
+            cols_order,
+        )
+
+        # Save the DataFrames.
+        if df_iter.isna().sum().sum() == 0 and df_knn.isna().sum().sum() == 0:
+            save_df(df_iter, iter_save_path)
+            print(f"DataFrame saved to {iter_save_path}.")
+            save_df(df_knn, knn_save_path)
+            print(f"DataFrame saved to {knn_save_path}.")
+        else:
+            print(f"DataFrame has {df_iter.isna().sum().sum()} NaNs.")
+            print(f"DataFrame has {df_knn.isna().sum().sum()} NaNs.")
