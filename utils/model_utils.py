@@ -334,3 +334,93 @@ def plot_confusion_matrix(
     plt.ylabel("Actual")
     plt.title(title)
     plt.show()
+
+
+## Marathon Performance Plots
+def plot_performance_distribution(
+    y_true, y_pred, title: str, bins: int = 10, fig_size: tuple[int, int] = (8, 6)
+) -> None:
+    """
+    ### Plot the distribution of the actual and predicted finish times.
+    ----
+    ### Arguments:
+    + y_true: The actual finish times.
+    + y_pred: The predicted finish times.
+    + bins: The number of bins.
+    ----
+    ### Returns:
+    + None
+    """
+    plt.figure(figsize=fig_size, dpi=100)
+    sns.histplot(y_true, bins=bins, alpha=0.5, label="Actual Times", kde=True)
+    sns.histplot(y_pred, bins=bins, alpha=0.5, label="Predicted Times", kde=True)
+    plt.legend(loc="best")
+    plt.xlabel("Finish Time")
+    plt.ylabel("Frequency")
+    plt.title(title)
+    plt.show()
+
+
+def plot_performance_diff(
+    y_true, y_pred, title: str, fig_size: tuple[int, int] = (8, 6)
+) -> None:
+    """
+    ### Plot the difference between the actual and predicted finish times.
+    ----
+    ### Arguments:
+    + y_true: The actual finish times.
+    + y_pred: The predicted finish times.
+    + title: The title of the plot.
+    + fig_size: The figure size.
+    ----
+    ### Returns:
+    + None
+    """
+    plt.figure(figsize=fig_size, dpi=100)
+    plt.scatter(
+        y_pred, y_true - y_pred, alpha=0.5, label="Actual vs. Predicted Finish Times"
+    )
+    plt.plot(
+        [min(y_pred), max(y_pred)],
+        [0, 0],
+        color="red",
+        linestyle="--",
+        label="Line of Equality",
+    )
+    plt.title(title)
+    plt.xlabel("Predicted Finish Time")
+    plt.ylabel("Difference (Seconds)")
+    plt.grid(True)
+    plt.show()
+
+
+def plot_performance_comparison(
+    y_true, y_pred, title: str, fig_size: tuple[int, int] = (8, 6)
+) -> None:
+    """
+    ### Plot the actual vs. predicted finish times.
+    ----
+    ### Arguments:
+    + y_true: The actual finish times.
+    + y_pred: The predicted finish times.
+    + title: The title of the plot.
+    + fig_size: The figure size.
+    ----
+    ### Returns:
+    + None
+    """
+    plt.figure(figsize=fig_size, dpi=100)
+    plt.scatter(y_pred, y_true, alpha=0.5, label="Actual vs. Predicted Finish Times")
+    plt.plot(
+        [min(y_true), max(y_true)],
+        [min(y_true), max(y_true)],
+        color="red",
+        linestyle="--",
+        label="Line of Equality",
+    )
+    plt.title(title)
+    plt.xlabel("Predicted Finish Time")
+    plt.ylabel("Actual Finish Time")
+    plt.grid(True)
+    plt.legend()
+    plt.show()
