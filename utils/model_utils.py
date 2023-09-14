@@ -336,7 +336,93 @@ def plot_confusion_matrix(
     plt.show()
 
 
-## Marathon Performance Plots
+## Marathon Performance
+def get_reg_preprocessed_datasets(
+    df: pd.DataFrame,
+    cols_order: list[str],
+    splits_cols: list[str],
+    test_split: float = 0.2,
+    val_split: float = 0.25,
+    random_state: int = 17,
+    return_cols: bool = False,
+    last_split: int = 10,
+    return_full_data: bool = False,
+):
+    """
+    ### Get the preprocessed datasets.
+    ----
+    ### Arguments:
+    + df: The DataFrame.
+    + cols_order: The columns order.
+    + splits_cols: The splits columns.
+    + test_split: The test split.
+    + val_split: The validation split.
+    + random_state: The random state.
+    + return_cols: Whether to return the columns or not.
+    + last_split: The last split to be used. `None` means all splits will be used.
+    ['5k': 1, '10k': 2, '15k': 3, '20k': 4, 'half': 5, '25k': 6, '30k': 7, '35k': 8, '40k': 9]
+    + return_full_data: Whether to return the full data before splitting or not.
+    ----
+    ### Returns:
+    + (X_train, y_train): The training set.
+    + (X_test, y_test): The test set.
+    + (X_val, y_val): The validation set.
+    """
+    # the last split is not used since it is the target variable.
+    assert last_split <= 9, "last_split must be less than or equal to 9."
+    # Transform skewed features.
+    tmp_df = transform_skewed_features(df, cols_order)
+    # Transform the columns.
+    tmp_df = transform_cols(df, splits_cols, "reg")
+
+    # Define the columns to be used to train the model.
+    cols_names = tmp_df.columns.to_list()
+    # N.B Set could be used instead of list, but the order of the columns will be lost, plus the list is small.
+    # Only one gender column is used, since it is a binary column.
+    non_split_cols = [
+        col for col in cols_names if col not in splits_cols and col != "gender_M"
+    ]
+    # the speed cols are not used since they are highly correlated with the pace cols.
+    used_split_cols = [
+        item for item in cols_names if "_time" in item or "_pace" in item
+    ][: last_split * 2]
+    used_cols = non_split_cols + used_split_cols
+    pprint(f"The columns to be used: {used_cols}")
+
+    # Main DataFrame.
+    X = tmp_df[used_cols]
+
+    # Encoding the target variable.
+    # Gettting the target variable.
+    y = df["k_finish_time"].to_numpy()
+    transformer = PowerTransformer(standardize=True)
+    y = transformer.fit_transform(y.reshape(-1, 1)).flatten()
+    # y = target_scaler.fit_transform(y.reshape(-1, 1)).flatten()
+
+    # Splitting The data into train, validation and test sets.
+    X_train, X_test, y_train, y_test = train_test_split(
+        X.to_numpy(), y, test_size=test_split, random_state=random_state
+    )
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_train,
+        y_train,
+        test_size=val_split,
+        random_state=random_state,
+    )
+
+    if return_full_data:
+        return (X, y)
+    elif return_cols:
+        return (
+            (X_train, y_train),
+            (X_test, y_test),
+            (X_val, y_val),
+            transformer,
+            used_cols,
+        )
+    return (X_train, y_train), (X_test, y_test), (X_val, y_val), transformer
+
+
 def plot_performance_distribution(
     y_true, y_pred, title: str, bins: int = 10, fig_size: tuple[int, int] = (8, 6)
 ) -> None:
