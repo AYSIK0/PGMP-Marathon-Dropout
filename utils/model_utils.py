@@ -174,7 +174,9 @@ def transform_skewed_features(
     return df
 
 
-def transform_cols(df: pd.DataFrame, splits_cols: list[str]) -> pd.DataFrame:
+def transform_cols(
+    df: pd.DataFrame, splits_cols: list[str], task_type: str = "class"
+) -> pd.DataFrame:
     """
     ### Transform the columns, using the ColumnTransformer, the splits columns will be scaled using the RobustScaler, \
     and the rest of the columns will be scaled using the StandardScaler, and the categorical columns will be encoded using the OneHotEncoder.
@@ -182,6 +184,7 @@ def transform_cols(df: pd.DataFrame, splits_cols: list[str]) -> pd.DataFrame:
     ### Arguments:
     + df: The DataFrame.
     + splits_cols: The splits columns.
+    + task_type: The task type, either classification `class` or regression `reg`.
     ----
     ### Returns:
     + df: The DataFrame with the transformed columns.
@@ -194,23 +197,35 @@ def transform_cols(df: pd.DataFrame, splits_cols: list[str]) -> pd.DataFrame:
 
     # Define the columns.
     # These columns were selected since they will be scaled using the standard scaler.
-    num_cols = [
-        "daily_min",
-        "daily_max",
-        "medium_temp",
-        "avg_humidity",
-        "avg_barometer",
-        "avg_windspeed",
-        "5k_dnf_pct",
-        "10k_dnf_pct",
-        "15k_dnf_pct",
-        "20k_dnf_pct",
-        "half_dnf_pct",
-        "25k_dnf_pct",
-        "30k_dnf_pct",
-        "35k_dnf_pct",
-        "40k_dnf_pct",
-    ]
+    if task_type == "class":
+        num_cols = [
+            "daily_min",
+            "daily_max",
+            "medium_temp",
+            "avg_humidity",
+            "avg_barometer",
+            "avg_windspeed",
+            "5k_dnf_pct",
+            "10k_dnf_pct",
+            "15k_dnf_pct",
+            "20k_dnf_pct",
+            "half_dnf_pct",
+            "25k_dnf_pct",
+            "30k_dnf_pct",
+            "35k_dnf_pct",
+            "40k_dnf_pct",
+        ]
+    elif task_type == "reg":
+        num_cols = [
+            "daily_min",
+            "daily_max",
+            "medium_temp",
+            "avg_humidity",
+            "avg_barometer",
+            "avg_windspeed",
+        ]
+    else:
+        raise ValueError("task_type must be either `class` or `reg`.")
 
     cat_cols = ["age_cat", "gender", "runner_type"]
     cols_transformer = ColumnTransformer(
