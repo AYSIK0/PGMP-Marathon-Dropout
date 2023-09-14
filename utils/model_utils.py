@@ -201,6 +201,15 @@ def transform_cols(df: pd.DataFrame, splits_cols: list[str]) -> pd.DataFrame:
         "avg_humidity",
         "avg_barometer",
         "avg_windspeed",
+        "5k_dnf_pct",
+        "10k_dnf_pct",
+        "15k_dnf_pct",
+        "20k_dnf_pct",
+        "half_dnf_pct",
+        "25k_dnf_pct",
+        "30k_dnf_pct",
+        "35k_dnf_pct",
+        "40k_dnf_pct",
     ]
 
     cat_cols = ["age_cat", "gender", "runner_type"]
