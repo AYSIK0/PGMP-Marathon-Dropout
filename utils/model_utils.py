@@ -24,17 +24,19 @@ def load_and_concat_all_data(
     dataset_name: str = None,
     dataset_type: str = "impute",
     dtype=None,
+    suppress_warnings: bool = True,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame] | pd.DataFrame:
     """
-    ### Load and concatenate all the DataFrames.
+    ### Load and concatenate all the DataFrames for one marathon.
     ----
     ### Arguments:
     + marathon_name: The name of the marathon.
     + parent_path: The path to load the DataFrames.
     + years: The years of the marathon.
     + dataset_name: The name of the dataset to return.
-    + dtype: The data types of the DataFrame.
     + dataset_type: The type of the dataset, either the imputed `impute` or the extended `ext`.
+    + dtype: The data types of the DataFrame.
+    + suppress_warnings: Whether to suppress the warnings or not.
     ----
     ### Returns:
     + data: The DataFrames, if `dataset_name` is None.
@@ -54,7 +56,8 @@ def load_and_concat_all_data(
             data[0].append(pd.read_csv(knn_path, dtype=dtype))
             data[1].append(pd.read_csv(iter_path, dtype=dtype))
         else:
-            print(f"DataFrame not found at {knn_path} or {iter_path}.")
+            if not suppress_warnings:
+                print(f"WARNING: DataFrame not found at {knn_path} or {iter_path}.")
             continue
     # Concatenate all data
     data[0] = pd.concat(data[0], ignore_index=True)
@@ -65,6 +68,57 @@ def load_and_concat_all_data(
                 return data[0]
             case "iter":
                 return data[1]
+    return data
+
+
+def get_all_data(
+    marathon_names: list[str],
+    marathon_paths: list[str],
+    years: list[str],
+    dataset_name: str = "iter",
+    dataset_type: str = "ext",
+    dtype=None,
+    supress_warnings: bool = True,
+) -> pd.DataFrame:
+    """
+    ### Get all the data from the specified marathons.
+    ----
+    ### Arguments:
+    + marathon_names: The names of the marathons.
+    + marathon_paths: The paths of the marathons.
+    + years: The years of the marathons.
+    + dataset_name: The name of the dataset to return (either `knn` or `iter`).
+    + dataset_type: The type of the dataset, either the imputed `impute` or the extended `ext`.
+    + dtype: The data types of the DataFrame.
+    + suppress_warnings: Whether to suppress the warnings or not.
+    ----
+    ### Returns:
+    + data: The combined DataFrames.
+    """
+    # Check the dataset name.
+    assert dataset_name in [
+        "knn",
+        "iter",
+    ], "dataset_name must be either `knn` or `iter`."
+    # Check the dataset type.
+    assert dataset_type in [
+        "impute",
+        "ext",
+    ], "dataset_type must be either `impute` or `ext`."
+
+    data = []
+    for marathon_name, marathon_path in zip(marathon_names, marathon_paths):
+        tmp = load_and_concat_all_data(
+            marathon_name,
+            marathon_path,
+            years,
+            dataset_name,
+            dataset_type,
+            dtype=dtype,
+            suppress_warnings=supress_warnings,
+        )
+        data.append(tmp)
+    data = pd.concat(data, ignore_index=True)
     return data
 
 
