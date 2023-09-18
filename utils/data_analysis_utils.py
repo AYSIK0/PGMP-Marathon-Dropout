@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.metrics import precision_recall_curve
 
 
 def plot_feature_skewness(
@@ -311,4 +312,70 @@ def plot_non_finishers_by_cat(
     plt.xlabel(f"{category.capitalize()}")
     plt.ylabel("Number of Non-Finishers")
     plt.legend().remove()
+    plt.show()
+
+
+def plot_prc(name, labels, predictions, **kwargs) -> None:
+    """
+    ### Plot the precision-recall curve.
+    #### This method has been taken from: https://www.tensorflow.org/tutorials/structured_data/imbalanced_data#plot_the_prc
+    ----
+    ### Arguments:
+    + name: The name of the model.
+    + labels: The true labels.
+    + predictions: The predicted labels.
+    + kwargs: The keyword arguments.
+    ----
+    ### Returns:
+    + None
+    """
+    precision, recall, _ = precision_recall_curve(labels, predictions)
+    plt.plot(precision, recall, label=name, linewidth=1, **kwargs)
+    plt.xlabel("Precision")
+    plt.ylabel("Recall")
+    plt.grid(True, linewidth=0.5)
+    ax = plt.gca()
+    ax.set_aspect("equal")
+
+
+def plot_metrics(
+    history_df,
+    train_metrics,
+    val_metrics,
+    fig_size: tuple[int, int] = (15, 8),
+    legend_pos: str = "best",
+) -> None:
+    """
+    ### Plot the metrics of the model.
+    ----
+    ### Arguments:
+    + history_df: The history DataFrame.
+    + train_metrics: The train metrics.
+    + val_metrics: The validation metrics.
+    + fig_size: The figure size.
+    + legend_pos: The legend position.
+    ----
+    ### Returns:
+    + None
+    """
+    fig, (ax_train, ax_val) = plt.subplots(1, 2)
+    fig.set_size_inches(fig_size)
+    # Plot the Train metrics.
+    sns.lineplot(data=history_df[train_metrics], palette="Set1", ax=ax_train)
+    ax_train.spines["top"].set_visible(False)
+    ax_train.spines["right"].set_visible(False)
+    ax_train.grid(True, linewidth=0.5)
+    ax_train.set_xlabel("Epoch")
+    ax_train.set_ylabel("Metric Value")
+    ax_train.set_title("Train Metrics")
+    ax_train.legend(loc=legend_pos)
+    # Plot the Validation metrics.
+    sns.lineplot(data=history_df[val_metrics], palette="Set1", ax=ax_val)
+    ax_val.spines["top"].set_visible(False)
+    ax_val.spines["right"].set_visible(False)
+    ax_val.grid(True, linewidth=0.5)
+    ax_val.set_xlabel("Epoch")
+    ax_val.set_ylabel("Metric Value")
+    ax_val.set_title("Validation Metrics")
+    ax_val.legend(loc=legend_pos)
     plt.show()
