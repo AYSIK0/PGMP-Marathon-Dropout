@@ -185,12 +185,22 @@ def plot_split_data_trend_by_cat(
     ], "split_data must be either `time`, `pace`, or `speed`."
 
     unit_dict = {"time": "seconds", "pace": "sec/km", "speed": "km/h"}
+    cols = [col for col in df.columns if f"_{split_data}" in col]
 
     plt.figure(figsize=fig_size)
 
     category = "gender"
-    cols = [col for col in df.columns if f"_{split_data}" in col]
-    grouped_cat_type = df.groupby(category)[cols].mean().transpose()
+    if split_data == "time":
+        # Calculating the average split times.
+        grouped_cat_type = df.groupby(category)[cols].mean().transpose()
+        # Getting the first split times.
+        k_5_non_cum_time = grouped_cat_type.loc[cols[0]]
+        # Calculating non-cumulative split times.
+        grouped_cat_type = grouped_cat_type.diff()
+        # Adding the first split times to the non-cumulative split times since the first split remains the same.
+        grouped_cat_type.loc[cols[0]] = k_5_non_cum_time
+    else:
+        grouped_cat_type = df.groupby(category)[cols].mean().transpose()
     plt.subplot(2, 2, 1)
     for cat_type in grouped_cat_type.columns:
         plt.plot(
@@ -208,8 +218,17 @@ def plot_split_data_trend_by_cat(
     plt.tight_layout()
 
     category = "age_cat"
-    cols = [col for col in df.columns if f"_{split_data}" in col]
-    grouped_cat_type = df.groupby(category)[cols].mean().transpose()
+    if split_data == "time":
+        # Calculating the average split times.
+        grouped_cat_type = df.groupby(category)[cols].mean().transpose()
+        # Getting the first split times.
+        k_5_non_cum_time = grouped_cat_type.loc[cols[0]]
+        # Calculating non-cumulative split times.
+        grouped_cat_type = grouped_cat_type.diff()
+        # Adding the first split times to the non-cumulative split times since the first split remains the same.
+        grouped_cat_type.loc[cols[0]] = k_5_non_cum_time
+    else:
+        grouped_cat_type = df.groupby(category)[cols].mean().transpose()
     plt.subplot(2, 2, 2)
     for cat_type in grouped_cat_type.columns:
         plt.plot(
@@ -228,8 +247,17 @@ def plot_split_data_trend_by_cat(
     plt.tight_layout()
 
     category = "runner_type"
-    cols = [col for col in df.columns if f"_{split_data}" in col]
-    grouped_cat_type = df.groupby(category)[cols].mean().transpose()
+    if split_data == "time":
+        # Calculating the average split times.
+        grouped_cat_type = df.groupby(category)[cols].mean().transpose()
+        # Getting the first split times.
+        k_5_non_cum_time = grouped_cat_type.loc[cols[0]]
+        # Calculating non-cumulative split times.
+        grouped_cat_type = grouped_cat_type.diff()
+        # Adding the first split times to the non-cumulative split times since the first split remains the same.
+        grouped_cat_type.loc[cols[0]] = k_5_non_cum_time
+    else:
+        grouped_cat_type = df.groupby(category)[cols].mean().transpose()
     plt.subplot(2, 2, 3)
     for cat_type in grouped_cat_type.columns:
         plt.plot(
