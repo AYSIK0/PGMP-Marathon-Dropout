@@ -9,3 +9,7 @@ __pycache__
 .ipynb_checkpoints
 
 # Dataset
+Marathons_Data/
+
+# Models
+Models/
